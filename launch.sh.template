@@ -1,0 +1,160 @@
+#!/bin/sh
+# Copyright (c) 2011-2015 by Vertica, an HP Company.  All rights reserved.
+# Adds new EC2 instances to the running cluster and database
+
+(
+PATH=/usr/local/bin:/opt/vertica/bin:${PATH}
+# in non terminal mode, redirect stdout and stderr to logfile
+if [ ! -t 0 ]; then exec >> /var/log/launch.log 2>&1; fi
+
+echo Join new instances to Vertica DB cluster [`date`]
+echo ===========================================================
+
+# Configuration – copy from autoscaling_vars.sh
+aws_access_key_id=YOUR_ACCESS_KEY_ID
+aws_secret_access_key=YOUR_SECRET_ACCESS_KEY
+region=YOUR_REGION
+autoscaling_group_name=YOUR_AUTOSCALING_GROUP_NAME
+
+
+
+echo Install & configure AWS CLI [`date`]
+cd /tmp
+curl https://s3.amazonaws.com/aws-cli/awscli-bundle.zip -o awscli-bundle.zip
+unzip -o awscli-bundle.zip
+./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
+mkdir -p ~/.aws
+cat > ~/.aws/credentials <<EOF
+[default]
+aws_access_key_id = $aws_access_key_id
+aws_secret_access_key = $aws_secret_access_key
+EOF
+cat > ~/.aws/config <<EOF
+[default]
+output = table
+region = $region
+EOF
+chmod 600 ~/.aws/*
+cp -R ~/.aws ~dbadmin
+chown -R dbadmin.verticadba ~dbadmin/.aws
+chmod 600 ~dbadmin/.aws/*
+
+# get instance configuration
+resId=$(curl -s http://169.254.169.254/latest/meta-data/reservation-id); echo Reservation: $resId
+instId=$(curl -s http://169.254.169.254/latest/meta-data/instance-id); echo InstanceId: $instId
+privateIp=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4); echo PrivateIP: $privateIp
+publicIp=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4); echo PublicIP: $publicIp
+macs=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/)
+subnetCIDR=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$macs/subnet-ipv4-cidr-block/)
+mask=$(echo $subnetCIDR | cut -d"/" -f 2)
+eni=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$macs/interface-id)
+
+
+echo Get all nodes in autoscaling group [`date`]
+groupNodes=$(aws --output=text ec2 describe-instances --filters Name=tag-key,Values=Name,Name=tag-value,Values=$autoscaling_group_name --query "Reservations[*].Instances[*].PrivateIpAddress")
+
+echo Find first node in group [$groupNodes] accepting DB connections [`date`]
+connectTo=""
+for node in $groupNodes
+do
+   echo Trying vsql connection to $node
+   vsql -U dbadmin -h $node -c "select 1" > /dev/null
+   if [ $? -eq 0 ]; then
+      echo Connection succeeded.
+      connectTo=$node
+      break
+   else
+      echo Connection failed.
+   fi
+done
+[ -z $connectTo ] && { echo No nodes in autoscaling group responded to DB connection request. Exiting.; exit 1; }
+
+echo "Log initial entry to 'launches' table"
+echo "$resId|$instId|$privateIp|$publicIp|INITIALIZING|1" | vsql -U dbadmin -h $connectTo -c "COPY autoscale.launches (reservationid, ec2_instanceid, node_address, node_public_address, status, is_running) FROM STDIN"
+
+echo "Check if there are any DOWN nodes."
+# If there is a DOWN node, we will automatically take its place by adopting its private IP address (if another launching instance hasn't got it first!).
+vsql -U dbadmin -h $connectTo -c "UPDATE autoscale.launches SET replace_node_address = (SELECT node_address FROM nodes WHERE node_state='DOWN' EXCEPT SELECT node_address FROM autoscale.launches WHERE is_running LIMIT 1) WHERE ec2_instanceid='$instId'; COMMIT;"
+downNode=$(vsql -qAt -U dbadmin -h $connectTo -c "SELECT replace_node_address FROM autoscale.launches WHERE ec2_instanceid='$instId'")
+if [ ! -z "$downNode" ]; then
+   echo "Adopting Private IP Address of DOWN node [$downNode]. Original Private IP Address [$privateIp]"
+   aws ec2 assign-private-ip-addresses --network-interface $eni --private-ip-addresses $downNode
+   ip address add $downNode/$mask brd + dev eth0
+   echo "Modify default route to use new IP address as the src"
+   ip route delete $subnetCIDR
+   ip route add $subnetCIDR dev eth0 src $downNode
+   echo "Change hostname to use new IP"
+   new_hostname=`echo "ip-$downNode" | sed -e 's/\./-/g'`
+   hostname $new_hostname
+   echo -e "NETWORKING=yes\nHOSTNAME=$new_hostname.localdomain" > /etc/sysconfig/network
+   echo "$downNode $new_hostname" >> /etc/hosts
+fi
+
+
+echo Retrieve instanceIds for current reservationId: $resId [`date`]
+resInstances=$(aws --output=text ec2 describe-instances --filters "Name=reservation-id,Values=$resId" --query "Reservations[*].Instances[*].InstanceId")
+
+echo Wait until all nodes [$resInstances] in our reservation have initialized [`date`]
+for instance in $resInstances; do
+count=600
+   while [ $count -ne 0 ];  do
+      launched=$(vsql -qAt -U dbadmin -h $connectTo -c "select count(*) from autoscale.launches where ec2_instanceid='$instance'")
+      if [ "$launched" -gt 0 ]; then
+         # instance has created its log, now check ssh port using private IP address
+         node_address=$(vsql -qAt -U dbadmin -h $connectTo -c "select nvl(replace_node_address, node_address) from autoscale.launches where ec2_instanceid='$instance'")
+         ssh_port=22
+         nc -zw3 $node_address $ssh_port
+         if [ $? -eq 0 ]; then
+             # instance is accepting ssh on the assigned node_address.. we are good to go! Break out of this loop
+             break ;
+         else
+             echo "Instance [$instance] is not yet accepting ssh connections on $node_address port $ssh_port"
+         fi
+      else
+         echo "Instance $instance has not yet created its initial 'launched' entry"
+      fi
+      ((count=count-1))
+      if [ $count -eq 0 ]; then
+         echo Maximum retries  – exiting
+         vsql vsql -U dbadmin -h $connectTo -c "UPDATE autoscale.launches set status='FAIL - TIMEOUT', is_running=0 where ec2_instanceid='$instance'; COMMIT;"
+         exit 1
+      fi
+      sleep 1
+   done
+done
+
+# Add all new instances from this reservation to the database
+# NOTE - first instance to attempt this will succeed (only one will run, due to concurrency locking)
+echo "Connect to $connectTo to add queued nodes to cluster - autoscale.add_nodes() [`date`]"
+vsql -U dbadmin -h $connectTo -c "SELECT autoscale.add_nodes()"
+sleep 5
+
+echo Check status
+is_running=$(vsql -qAt -U dbadmin -h $connectTo -c "select count(*) from autoscale.launches where is_running")
+if [ $is_running -gt 0 ]; then
+   # check for (remote) possibility that multiple nodes deadlocked on concurrency check.
+   # if that happened, there will be no 'added_by_node' values
+   added_by_node=$(vsql -qAt -U dbadmin -h $connectTo -c "select distinct added_by_node from autoscale.launches where is_running")
+   if [ -z "$added_by_node" ]; then
+      echo "Nodes not yet added, and not in progress - encountered concurrency check deadlock"
+      echo "Backing off for random delay (1-30 seconds) and call autoscale.add_nodes() again [`date`]"
+      sleep `shuf -i1-30 -n1`
+      echo "Calling autoscale.add_nodes() [`date`]"
+      vsql -U dbadmin -h $connectTo -c "SELECT autoscale.add_nodes()"
+      sleep 5
+      is_running=$(vsql -qAt -U dbadmin -h $connectTo -c "select count(*) from autoscale.launches where is_running")
+   fi
+fi
+if [ $is_running -gt 0 ]; then
+   added_by_node=$(vsql -qAt -U dbadmin -h $connectTo -c "select distinct added_by_node from autoscale.launches where is_running")
+   echo "Queued launches are being processed by node: $added_by_node"
+else
+   echo "Queued launches completed. Node status:"
+   vsql -qAt -U dbadmin -h $connectTo -c "select node_address || ':' || node_state from nodes where node_address IN ('$privateIp','$downNode')"
+fi
+
+
+echo Done! [`date`]
+) &  # run script in the background so we don't block instance startup
+exit 0
+
