@@ -38,7 +38,7 @@ Here's how it works.
 ## Setup
 
 - **Download the HP Vertica Auto Scaling package from github**  
-`git clone https://github.com/rstrahan/aws-autoscaling-vertica.git`
+`git clone https://github.com/vertica/aws-autoscaling-vertica.git`
 
 - **Create the config file**  
 Copy the template, `autoscaling_vars.sh.template`, to `autoscaling_vars.sh`, and edit to provide valid settings for each variable (see Appendix).
