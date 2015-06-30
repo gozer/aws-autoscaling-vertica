@@ -81,7 +81,7 @@ echo Done removing nodes [$nodes] from active DB [$DB] [`date`]
 
 
 echo remove nodes [$nodes] from cluster [`date`]
-sudo /opt/vertica/sbin/install_vertica --remove-hosts $nodes --point-to-point --dba-user-password-disabled --ssh-identity $autoscaleDir/key.pem 
+sudo /opt/vertica/sbin/install_vertica --remove-hosts $nodes --point-to-point --dba-user-password-disabled --ssh-identity $autoscaleDir/key.pem --failure-threshold HALT
 
 echo Instruct AWS to proceed with instance termination by completing lifecycle actions [`date`]
 for token in $tokens
