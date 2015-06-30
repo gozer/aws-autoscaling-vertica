@@ -6,14 +6,17 @@ aws_secret_access_key=YOUR_SECRET_ACCESS_KEY
 region=us-east-1						# Or your region, if different	
 pem_file=/path/to/key.pem					# your ssh key file
 	
-# Vertica 7.1.1 AMI Image IDs
-# US East (N. Virginia)   	ami-7a7efc12
-# US West (Oregon)        	ami-099cd539
-# EU (Ireland)    		ami-8afb50fd
-# Asia Pacific (Singapore)	ami-a8c3e3fa
-# Asia Pacific (Sydney)   	ami-abe08c91
-# Asia Pacific (Tokyo)    	ami-f9b08df8
-image_id= ami-7a7efc12					# Or appropriate image for your region
+# Vertica 7.1.2-1 AMI Image IDs
+# US East (N. Virginia)   	ami-47c8332c
+# US West (Oregon)        	ami-3ff3f70f
+# US West (N. California)      	ami-bd0afdf9
+# EU (Frankfurt)    		ami-6c605b71
+# EU (Ireland)    		ami-bae7a3cd
+# Asia Pacific (Singapore)	ami-b2ded9e0
+# Asia Pacific (Sydney)   	ami-9b2164a1
+# Asia Pacific (Tokyo)    	ami-d61dbbd6
+# Asia Pacific (Sao Paulo)    	ami-fd0280e0
+image_id=ami-47c8332c					# Or appropriate image for your region
 
 # Supported image types for Vertica AMI are: i2.4xlarge, i2.8xlarge, c3.4xlarge, c3.8xlarge, r3.4xlarge, r3.8xlarge
 instance_type=c3.4xlarge

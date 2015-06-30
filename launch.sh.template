@@ -16,9 +16,11 @@ aws_secret_access_key=YOUR_SECRET_ACCESS_KEY
 region=YOUR_REGION
 autoscaling_group_name=YOUR_AUTOSCALING_GROUP_NAME
 
+echo Install nmap and unzip
+yum install nmap -y
+yum install unzip -y
 
-
-echo Install & configure AWS CLI [`date`]
+echo Install and configure AWS CLI [`date`]
 cd /tmp
 curl https://s3.amazonaws.com/aws-cli/awscli-bundle.zip -o awscli-bundle.zip
 unzip -o awscli-bundle.zip
@@ -103,7 +105,7 @@ count=600
          # instance has created its log, now check ssh port using private IP address
          node_address=$(vsql -qAt -U dbadmin -h $connectTo -c "select nvl(replace_node_address, node_address) from autoscale.launches where ec2_instanceid='$instance'")
          ssh_port=22
-         nc -zw3 $node_address $ssh_port
+	 nmap -p $ssh_port $node_address | grep open
          if [ $? -eq 0 ]; then
              # instance is accepting ssh on the assigned node_address.. we are good to go! Break out of this loop
              break ;
