@@ -23,7 +23,7 @@ You need to have an HP Vertica database cluster up and running in an AWS VPC sub
 
 The new Elastic Load Balancer will sit on the same subnet as your HP Vertica nodes, and will be assigned IP Addresses from your subnet's CIDR. Per Amazon [documentation](http://docs.aws.amazon.com/ElasticLoadBalancing/latest/DeveloperGuide/setting-up-elb.html#set-up-ec2), you must have at least 8 free IP Addresses in the subnet for the ELB to use.
 
-Validate that you can connect to any of the database nodes using vsql, or your database client of choice.
+Validate that you can connect to any of the database nodes, using vsql or your database client of choice.
 
 ## Create an Elastic Load Balancer
 
