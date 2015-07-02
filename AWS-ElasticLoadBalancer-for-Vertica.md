@@ -157,4 +157,4 @@ From the [EC2 Dashboard](https://console.aws.amazon.com/ec2/), select the **Load
 
 ----
 
-*The use of AWS Elastic Load Balancing is not a formally tested or supported HP Vertica configuraton. Nevetheless, we hope you are encouraged to experiment. See what works, and post your feedback and best practices back to the community. Good luck!*
+*The use of AWS Elastic Load Balancing is not a formally tested or supported HP Vertica configuraton. Nevetheless, we hope you feel encouraged to experiment. See what works, and post your feedback and best practices back to the community. Good luck!*
