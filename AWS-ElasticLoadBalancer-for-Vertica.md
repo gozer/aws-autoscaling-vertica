@@ -1,5 +1,5 @@
-#Using AWS Elastic Load Balancer with HP Vertica
-Did you know that you can use an Elastic Load Balancer (ELB) to connect to your HP Vertica cluster running on Amazon Web Services? There are several good reasons why you might want to try it:
+#AWS Elastic Load Balancing with HP Vertica
+Did you know that you can use an Elastic Load Balancer (ELB) to connect to your HP Vertica cluster running on Amazon Web Services? Here are several good reasons why you might want to try it:
 - You won't need to allocate and manage public/elastic IP addresses for cluster nodes, since clients connect only to the ELB using one DNS Name.
 - It automatically distributes incoming connections across all the cluster nodes.
 - It is automatically highly available, so you don't need to worry about it failing.
