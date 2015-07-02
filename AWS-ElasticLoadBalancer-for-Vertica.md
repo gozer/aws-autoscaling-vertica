@@ -89,8 +89,8 @@ Double check the configuration, and click **Create** (bottom right) to initializ
 
 ####Increase ELB connection idle timeout
 
-By default, the Elastic Load Balancer will drop incoming connections if they are idle for 60 seconds.
-To keep idle sessions alive for longer, change the connection settings **Idle Timeout** value. From the [EC2 Dashboard](https://console.aws.amazon.com/ec2/), select the **Load Balancers** page, and open the **Details** tab. Click the Connection Settings **Edit** link, and increase the value.
+By default, the Elastic Load Balancer will drop a connection if it thinks the connection is idle for more than 60 seconds. Long running queries can look like idle connections to the ELB, since there is no network traffic between the client and the database while the query is running.
+To keep idle sessions and/or long queries alive for longer, change the connection settings **Idle Timeout** value. From the [EC2 Dashboard](https://console.aws.amazon.com/ec2/), select the **Load Balancers** page, and open the **Details** tab. Click the Connection Settings **Edit** link, and increase the value up to a maximum limit of 1 hour (3600 seconds). 
 
 <img style="margin-left: 50px;" src="images/ConnectionTimeout.png" alt="ConnectionTimeout" width="500">
 
