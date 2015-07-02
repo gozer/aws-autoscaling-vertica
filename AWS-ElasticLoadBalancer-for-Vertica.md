@@ -123,7 +123,7 @@ First you need to get the DNS Name for your Load Balancer. From the [EC2 Dashboa
 
 Use this DNS Name to configure your client connections, and validate that the Elastic Load Balancer is routing your connections to different nodes.
 
-Here we can see that the first connection from a remote vsql client, routes the connection to node0001.
+Here we can see that the first connection, from a remote vsql client, is routed to node0001.
 ```
 C:\Users\BOSTR>vsql -h BobCluster1-ELB-1481344770.us-east-1.elb.amazonaws.com -U dbadmin -w N0tT3ll1ng
 Welcome to vsql, the Vertica Analytic Database interactive terminal.
@@ -135,7 +135,7 @@ dbadmin=> select node_name from current_session ;
 (1 row)
 
 ```
-A second connection routes to node0003.
+A second connection is routed to node0003.
 ```
 C:\Users\BOSTR>vsql -h BobCluster1-ELB-1481344770.us-east-1.elb.amazonaws.com -U dbadmin -w N0tT3ll1ng
 Welcome to vsql, the Vertica Analytic Database interactive terminal.
