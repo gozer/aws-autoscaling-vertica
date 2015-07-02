@@ -11,7 +11,7 @@ Did you know that you can use an Elastic Load Balancer (ELB) to connect to your 
 
 <img style="margin-left: 100px;" src="images/ELB-Architecture.png" alt="Architecture" height="300" width="480">
 
-If you already have an HP Vertica cluster running on AWS, it is easy to set up an Elastic Load Balancer and experiment. It's not intrusive - you don't have to change any aspect of your existing cluster.
+If you already have an HP Vertica cluster running on AWS, it is easy to set up an Elastic Load Balancer to experiment. It's not intrusive - you don't have to change any aspect of your existing cluster.
 
 Or you might want to use our open source [Automatic Vertica Scaling and Node Replacement](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) package to create a new HP Vertica cluster using an auto scaling group. The Elastic Load Balancer is especially useful in combination with auto scaling, providing a single entry point to isolate clients from any node additions, removals, or replacements that occur behind the scenes.
 
