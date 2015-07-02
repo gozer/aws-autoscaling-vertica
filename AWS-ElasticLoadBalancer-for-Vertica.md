@@ -6,7 +6,7 @@ Did you know that you can use an Elastic Load Balancer (ELB) to connect to your 
 - It scales automatically, so you don't need to worry about it becoming a bottleneck.
 - It works seamlessly with our open source [Automatic Vertica Scaling and Node Replacement](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) package, automatically detecting when nodes are added, removed or replaced.
 - It will continually monitor the health of each cluster node by pinging the database port, and it will not route connections to any node that is down.
-- You can monitor your database connections using AWS CloudWatch charts and/or ELB access log files.
+- You can monitor your database connections using AWS CloudWatch and/or ELB access log files.
 
 
 <img style="margin-left: 100px;" src="images/ELB-Architecture.png" alt="Architecture" height="300" width="480">
