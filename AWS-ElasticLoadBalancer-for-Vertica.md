@@ -31,7 +31,7 @@ From the AWS Console, open the [EC2 Dashboard](https://console.aws.amazon.com/ec
 Select **Load Balancers** on the left.  
 Click the blue **Create Load balancer** button at the top of the page.
 
-**Step 1: Define Load Balancer**  
+###Step 1: Define Load Balancer**  
 
 i) Name your new Load Balancer
 ii) Associate it with the VPC and Subnet containing your HP Vertica cluster
