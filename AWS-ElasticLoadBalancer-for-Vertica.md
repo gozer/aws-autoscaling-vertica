@@ -31,7 +31,7 @@ From the AWS Console, open the [EC2 Dashboard](https://console.aws.amazon.com/ec
 Select **Load Balancers** on the left.  
 Click the blue **Create Load balancer** button at the top of the page.
 
-####Step 1: Define Load Balancer**  
+####Step 1: Define Load Balancer 
 
 i) Name your new Load Balancer
 ii) Associate it with the VPC and Subnet containing your HP Vertica cluster
@@ -39,7 +39,7 @@ iii) Configure protocol and port for HP Vertica client connections
 
 <img style="margin-left: 50px;" src="images/ELB-Setup-Step1.png" alt="ELB-Setup-Step1" width="500">
 
-**Step 2: Assign Security Groups**  
+####Step 2: Assign Security Groups  
 
 You can assign an existing security group, or create a new one. Be sure that the assigned security group does not block TCP traffic on the Vertica port (5433)!
 
@@ -47,7 +47,7 @@ Here we have elected to create a new security group which restricts the ELB to f
 
 <img style="margin-left: 50px;" src="images/ELB-Setup-Step2.png" alt="ELB-Setup-Step2" width="500">
 
-**Step 3: Configure Security Settings**  
+####Step 3: Configure Security Settings
 
 Ignore the 'secure listener' warning.
 
@@ -56,13 +56,13 @@ Instead, you should enable HP Vertica native support for secure connections over
 
 <img style="margin-left: 50px;" src="images/ELB-Setup-Step3.png" alt="ELB-Setup-Step3" width="500">
 
-**Step 4: Configure Health Check**  
+####Step 4: Configure Health Check  
 
 The Health Check defaults will validate that each HP Vertica node is accepting connections on the database port every 30 second interval. The ELB will not route connections to unhealthy instances. For now, we'll accept the defaults as shown.
 
 <img style="margin-left: 50px;" src="images/ELB-Setup-Step4.png" alt="ELB-Setup-Step4" width="500">
 
-**Step 5: Add EC2 Instances**  
+####Step 5: Add EC2 Instances  
 
 If you are using the [Automatic Vertica Scaling and Node Replacement](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) package, then do not assign instances. Instead, we will later associate our Elastic Load Balancer with the cluster auto scaling group, which will allow instances to be dynamically added and removed.
 
@@ -75,26 +75,26 @@ Deselect the checkbox **Cross-Zone Load Balancing** check box, because your Vert
 <img style="margin-left: 50px;" src="images/ELB-Setup-Step5.png" alt="ELB-Setup-Step5" width="500">
 
 
-**Step 6: Add Tags**
+####Step 6: Add Tags
 
 This step is optional - take it or leave it! Tags can be very handy though, for filtering dashboard views, billing reports, CLI results, and more.
 
 <img style="margin-left: 50px;" src="images/ELB-Setup-Step6.png" alt="ELB-Setup-Step6" width="500">
 
-**Step 7: Review and Create**
+####Step 7: Review and Create
 
 Double check the configuration, and click **Create** (bottom right) to initialize your new Elastic Load Balancer.
 
 <img style="margin-left: 50px;" src="images/ELB-Setup-Step7.png" alt="ELB-Setup-Step7" width="500">
 
-**Increase ELB connection idle timeout**
+####Increase ELB connection idle timeout
 
 By default, the Elastic Load Balancer will drop incoming connections if they are idle for 60 seconds.
 To keep idle sessions alive for longer, change the connection settings **Idle Timeout** value. From the [EC2 Dashboard](https://console.aws.amazon.com/ec2/), select the **Load Balancers** page, and open the **Details** tab. Click the Connection Settings **Edit** link, and increase the value.
 
 <img style="margin-left: 50px;" src="images/ConnectionTimeout.png" alt="ConnectionTimeout" width="500">
 
-**(Optional) Enable Access Logs**
+####(Optional) Enable Access Logs
 
 If you want to log all the incoming connection requests, you can configure the Elastic Load Balancer to save access log files to an S3 location of your choice. From the [EC2 Dashboard](https://console.aws.amazon.com/ec2/), select the **Load Balancers** page, and open the **Details** tab. Click the Access Logs **Edit** link, and set up the frequency and location for your log files.
 
