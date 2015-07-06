@@ -49,7 +49,7 @@ Here we have elected to create a new security group which allows the ELB to forw
 
 Ignore the 'secure listener' warning.
 
-*It is theoretically possible to configure the ELB to handle SSL on behalf of the cluster nodes, but this has not been tested. Instead, to secure your connections, you should enable HP Vertica native support for secure connections over SSL - see [Implementing SSL](http://my.vertica.com/docs/7.1.x/HTML/index.htm#Authoring/AdministratorsGuide/Security/SSL/ImplementingSSL.htm%3FTocPath%3DAdministrator's%2520Guide%7CImplementing%2520Security%7CImplementing%2520SSL%7C_____0). HP Vertica SSL mode is transparent to the Elastic Load Balancer and does not impact any of the setup requirements.*
+*It is theoretically possible to configure the ELB to handle SSL on behalf of the cluster nodes, but this has not been tested. Instead, to secure your connections, you can (any time) enable HP Vertica native support for secure connections over SSL - see [Implementing SSL](http://my.vertica.com/docs/7.1.x/HTML/index.htm#Authoring/AdministratorsGuide/Security/SSL/ImplementingSSL.htm%3FTocPath%3DAdministrator's%2520Guide%7CImplementing%2520Security%7CImplementing%2520SSL%7C_____0). HP Vertica SSL mode is transparent to the Elastic Load Balancer and does not impact any of the setup requirements.*
 
 <img style="margin-left: 50px;" src="images/ELB-Setup-Step3.png" alt="ELB-Setup-Step3" width="500">
 
