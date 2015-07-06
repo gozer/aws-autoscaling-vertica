@@ -1,29 +1,27 @@
 #AWS Elastic Load Balancing with HP Vertica
-Did you know that you can use an Elastic Load Balancer (ELB) to connect to your HP Vertica cluster running on Amazon Web Services? Here are several good reasons why you might want to try it:
-- You won't need to allocate and manage public/elastic IP addresses for cluster nodes, since clients connect only to the ELB using one DNS Name.
+Did you know that you can use an Elastic Load Balancer (ELB) to connect to your HP Vertica cluster running on Amazon Web Services? You can, and there are several reasons why you might want to try it:
+- It gives you one DNS Name for connecting to your cluster - no need to assign elastic IP addresses to multiple cluster nodes.
 - It automatically distributes incoming connections across all the cluster nodes.
 - It is automatically highly available, so you don't need to worry about it failing.
 - It scales automatically, so you don't need to worry about it becoming a bottleneck.
 - It works seamlessly with our open source [Automatic Vertica Scaling and Node Replacement](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) package, automatically detecting when nodes are added, removed or replaced.
-- It will continually monitor the health of each cluster node by pinging the database port, and it will not route connections to any node that is down.
-- You can monitor your database connections using AWS CloudWatch and/or ELB access log files.
+- It will monitor the health of each cluster node by pinging the database port, and it will not route connections to any failed node.
+- It lets you monitor your database connections using AWS CloudWatch and/or access log files.
 
 
 <img style="margin-left: 100px;" src="images/ELB-Architecture.png" alt="Architecture" height="300" width="480">
 
-If you already have an HP Vertica cluster running on AWS, it is easy to set up an Elastic Load Balancer to experiment. It's not intrusive - you don't have to change any aspect of your existing cluster.
+If you already have an HP Vertica cluster running on AWS, it is easy to set up an Elastic Load Balancer. It's not intrusive - you don't have to change any configuration on your existing cluster.
 
-Or you might want to use our open source [Automatic Vertica Scaling and Node Replacement](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) package to create a new HP Vertica cluster using an auto scaling group. The Elastic Load Balancer is especially useful in combination with auto scaling, providing a single entry point to isolate clients from any node additions, removals, or replacements that occur behind the scenes.
+Or you might want to use our open source [Automatic Vertica Scaling and Node Replacement](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) package to create a new HP Vertica cluster using an auto scaling group. The Elastic Load Balancer is especially useful in combination with auto scaling, as it provides a single entry point to isolate clients from node additions, removals, or replacements that may occur behind the scenes.
 
-Amazon's Elastic Load Balancing [documentation](http://docs.aws.amazon.com/ElasticLoadBalancing/latest/DeveloperGuide/elastic-load-balancing.html) is well worth reading if you decide to get serious about using ELB. In the meantime, here is a quick overview of how to quickly get going with an ELB for your Vertica cluster.
+Amazon's Elastic Load Balancing [documentation](http://docs.aws.amazon.com/ElasticLoadBalancing/latest/DeveloperGuide/elastic-load-balancing.html) is well worth reading. In the meantime, here is an overview describing how to quickly get going with an Elastic Load Balancer for your Vertica cluster.
 
 ## Before you start
 
-You need to have an HP Vertica database cluster up and running in an AWS VPC subnet. See the [HP Vertica on Amazon Web Services Guide](http://my.vertica.com/docs/Ecosystem/Amazon/HP_Vertica_7.1.x_Vertica_AWS.pdf), or use our open source [Automatic Vertica Scaling and Node Replacement](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) package to get started.  
+You should already have an HP Vertica database cluster up and running in an AWS VPC subnet. See the [HP Vertica on Amazon Web Services Guide](http://my.vertica.com/docs/Ecosystem/Amazon/HP_Vertica_7.1.x_Vertica_AWS.pdf), or use our open source [Automatic Vertica Scaling and Node Replacement](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) package.  
 
-The new Elastic Load Balancer will sit on the same subnet as your HP Vertica nodes, and will be assigned IP Addresses from your subnet's CIDR. Per Amazon [documentation](http://docs.aws.amazon.com/ElasticLoadBalancing/latest/DeveloperGuide/setting-up-elb.html#set-up-ec2), you must have at least 8 free IP Addresses in the subnet for the ELB to use.
-
-Validate that you can connect to any of the database nodes, using vsql or your database client of choice.
+The new Elastic Load Balancer will sit on the same subnet as your HP Vertica nodes, and will be assigned IP Addresses from your subnet's address range. Per Amazon [documentation](http://docs.aws.amazon.com/ElasticLoadBalancing/latest/DeveloperGuide/setting-up-elb.html#set-up-ec2), you must have at least 8 free IP Addresses in the subnet for the ELB to use.
 
 ## Create an Elastic Load Balancer
 
@@ -33,17 +31,17 @@ Click the blue **Create Load balancer** button at the top of the page.
 
 ####Step 1: Define Load Balancer 
 
-i) Name your new Load Balancer
-ii) Associate it with the VPC and Subnet containing your HP Vertica cluster
-iii) Configure protocol and port for HP Vertica client connections
+i) Name your new Load Balancer  
+ii) Associate it with the VPC and Subnet containing your HP Vertica cluster  
+iii) Configure Load Balancer and Instance protocol and port for HP Vertica client connections (TCP/5433)  
 
 <img style="margin-left: 50px;" src="images/ELB-Setup-Step1.png" alt="ELB-Setup-Step1" width="500">
 
 ####Step 2: Assign Security Groups  
 
-You can assign an existing security group, or create a new one. Be sure that the assigned security group does not block TCP traffic on the Vertica port (5433)!
+You can assign an existing security group, or create a new one. Be sure that the assigned security group does not block TCP traffic on the Vertica port (5433).
 
-Here we have elected to create a new security group which restricts the ELB to forward incoming database connections only.
+Here we have elected to create a new security group which allows the ELB to forward incoming database connections on port 5433 only.
 
 <img style="margin-left: 50px;" src="images/ELB-Setup-Step2.png" alt="ELB-Setup-Step2" width="500">
 
@@ -51,14 +49,13 @@ Here we have elected to create a new security group which restricts the ELB to f
 
 Ignore the 'secure listener' warning.
 
-It is theoretically possible to configure the ELB to handle SSL on behalf of the cluster nodes, but this has not been tested.
-Instead, you should enable HP Vertica native support for secure connections over SSL - see [Implementing SSL](http://my.vertica.com/docs/7.1.x/HTML/index.htm#Authoring/AdministratorsGuide/Security/SSL/ImplementingSSL.htm%3FTocPath%3DAdministrator's%2520Guide%7CImplementing%2520Security%7CImplementing%2520SSL%7C_____0). HP Vertica SSL mode is transparent to the Elastic Load Balancer and does not impact any of the setup requirements.
+**It is theoretically possible to configure the ELB to handle SSL on behalf of the cluster nodes, but this has not been tested. Instead, to secure your connections, you should enable HP Vertica native support for secure connections over SSL - see [Implementing SSL](http://my.vertica.com/docs/7.1.x/HTML/index.htm#Authoring/AdministratorsGuide/Security/SSL/ImplementingSSL.htm%3FTocPath%3DAdministrator's%2520Guide%7CImplementing%2520Security%7CImplementing%2520SSL%7C_____0). HP Vertica SSL mode is transparent to the Elastic Load Balancer and does not impact any of the setup requirements.**
 
 <img style="margin-left: 50px;" src="images/ELB-Setup-Step3.png" alt="ELB-Setup-Step3" width="500">
 
 ####Step 4: Configure Health Check  
 
-The Health Check defaults will validate that each HP Vertica node is accepting connections on the database port every 30 second interval. The ELB will not route connections to unhealthy instances. For now, we'll accept the defaults as shown.
+You can accept the defaults for the Health Check settings. The Health Check will validate that each HP Vertica node is accepting connections on the database port. The ELB will not route connections to unhealthy instances. 
 
 <img style="margin-left: 50px;" src="images/ELB-Setup-Step4.png" alt="ELB-Setup-Step4" width="500">
 
@@ -68,16 +65,16 @@ If you are using the [Automatic Vertica Scaling and Node Replacement](https://co
 
 If you have created your own HP Vertica cluster on AWS (not using auto scaling), then use this step to select and assign all the EC2 instances serving as nodes in your cluster, from the list.
 
-*You can also assign and remove instances later, using the **Instances** tab in the **Load Balancers** page of the [EC2 Dashboard](https://console.aws.amazon.com/ec2/).*
+You can also assign and remove instances later, using the **Instances** tab in the **Load Balancers** page of the [EC2 Dashboard](https://console.aws.amazon.com/ec2/).
 
-Deselect the checkbox **Cross-Zone Load Balancing** check box, because your Vertica cluster is most likely running inside a placement group (in a single availability zone subnet).
+Deselect the checkbox **Cross-Zone Load Balancing** check box, because your Vertica cluster is (hopefully) running in a placement group (inside a single availability zone).
 
 <img style="margin-left: 50px;" src="images/ELB-Setup-Step5.png" alt="ELB-Setup-Step5" width="500">
 
 
 ####Step 6: Add Tags
 
-This step is optional - take it or leave it! Tags can be very handy though, for filtering dashboard views, billing reports, CLI results, and more.
+This step is optional, though tags can be very handy for filtering dashboard views, billing reports, CLI results, and more.
 
 <img style="margin-left: 50px;" src="images/ELB-Setup-Step6.png" alt="ELB-Setup-Step6" width="500">
 
@@ -87,16 +84,16 @@ Double check the configuration, and click **Create** (bottom right) to initializ
 
 <img style="margin-left: 50px;" src="images/ELB-Setup-Step7.png" alt="ELB-Setup-Step7" width="500">
 
-####Increase ELB connection idle timeout
+####Increase Connection Idle Timeout
 
-By default, the Elastic Load Balancer will drop a connection if it thinks the connection is idle for more than 60 seconds. Long running queries can look like idle connections to the ELB, since there is no network traffic between the client and the database while the query is running.
-To keep idle sessions and/or long queries alive for longer, change the connection settings **Idle Timeout** value. From the [EC2 Dashboard](https://console.aws.amazon.com/ec2/), select the **Load Balancers** page, and open the **Details** tab. Click the Connection Settings **Edit** link, and increase the value up to a maximum limit of 1 hour (3600 seconds). 
+By default, the Elastic Load Balancer will drop a connection if it thinks that it is idle for more than 60 seconds. Long running queries can look like idle connections, since there is no network traffic between the client and the database while the query is running.
+To keep connections alive if the session is either idle or running longer queries, change the connection settings **Idle Timeout** value. From the [EC2 Dashboard](https://console.aws.amazon.com/ec2/), select the **Load Balancers** page, and open the **Details** tab. Click the Connection Settings **Edit** link, and increase the value up to the allowed maximum of 1 hour (3600 seconds). 
 
 <img style="margin-left: 50px;" src="images/ConnectionTimeout.png" alt="ConnectionTimeout" width="500">
 
 ####(Optional) Enable Access Logs
 
-If you want to log all the incoming connection requests, you can configure the Elastic Load Balancer to save access log files to an S3 location of your choice. From the [EC2 Dashboard](https://console.aws.amazon.com/ec2/), select the **Load Balancers** page, and open the **Details** tab. Click the Access Logs **Edit** link, and set up the frequency and location for your log files.
+To log all the incoming connection requests, configure the Elastic Load Balancer to save access log files to an S3 location of your choice. From the [EC2 Dashboard](https://console.aws.amazon.com/ec2/), select the **Load Balancers** page, and open the **Details** tab. Click the Access Logs **Edit** link, and set up the frequency and location for your log files.
 
 <img style="margin-left: 50px;" src="images/AccessLogs.png" alt="AccessLogs" width="500">
 
@@ -117,14 +114,15 @@ Go back to the Load Balancers page in the [EC2 Dashboard](https://console.aws.am
 
 ## Connect to the database using the Elastic Load Balancer
 
-First you need to get the DNS Name for your Load Balancer. From the [EC2 Dashboard](https://console.aws.amazon.com/ec2/), select the **Load Balancers** page (on the left), and then open the **Details** tab. The automatically assigned DNS name is shown. This is the name you will use to identify the database host for all your client connections.
+First you need to get the DNS Name for your Load Balancer. From the [EC2 Dashboard](https://console.aws.amazon.com/ec2/), select the **Load Balancers** page (on the left), and then open the **Details** tab. The automatically assigned DNS name is shown. 
 
 <img style="margin-left: 50px;" src="images/ELB-DNSName.png" alt="ELB-DNSName" width="500">
 
-Use this DNS Name to configure your client connections, and validate that the Elastic Load Balancer is routing your connections to different nodes.
+Configure your client connections to use this DNS Name as the database host name, and validate that the Elastic Load Balancer is routing different connections to different nodes.
 
-Here we can see that the first connection, from a remote vsql client, is routed to node0001.
+Here, using a remote vsql client, we can see that the first connection is routed to node0001, while a second connection to the same host name is routed to node0003.
 ```
+# First connections
 C:\Users\BOSTR>vsql -h BobCluster1-ELB-1481344770.us-east-1.elb.amazonaws.com -U dbadmin -w N0tT3ll1ng
 Welcome to vsql, the Vertica Analytic Database interactive terminal.
 
@@ -134,9 +132,7 @@ dbadmin=> select node_name from current_session ;
  v_vmart_node0001
 (1 row)
 
-```
-A second connection is routed to node0003.
-```
+# Second connection
 C:\Users\BOSTR>vsql -h BobCluster1-ELB-1481344770.us-east-1.elb.amazonaws.com -U dbadmin -w N0tT3ll1ng
 Welcome to vsql, the Vertica Analytic Database interactive terminal.
 
@@ -151,10 +147,10 @@ The Load Balancer is working!
 
 ## Monitoring
 
-From the [EC2 Dashboard](https://console.aws.amazon.com/ec2/), select the **Load Balancers** page (on the left), and then open the **Monitoring** tab to see charts showing connection counts, health check results, and more. Use the **Create Alarm** button on the top right to configure your custom alerts (for example, you may want to receive an SNS notification when nodes fail a health check, or when the number of connection requests exceeds your expected threshold).
+From the [EC2 Dashboard](https://console.aws.amazon.com/ec2/), select the **Load Balancers** page (on the left), and then open the **Monitoring** tab to see charts showing connection counts, health check results, and more. Use the **Create Alarm** button on the top right to configure your custom alerts (for example, you may want to receive an SNS email notification when nodes fail a health check, or when the number of connection requests exceeds your expected threshold).
 
 <img style="margin-left: 50px;" src="images/ELB-Monitoring-1.png" alt="ELB-Monitoring-1" width="500">
 
 ----
 
-*The use of AWS Elastic Load Balancing is not a formally tested or supported HP Vertica configuraton. Nevetheless, we hope you feel encouraged to experiment. See what works, and post your feedback and best practices back to the community. Good luck!*
+*The use of AWS Elastic Load Balancing is not a formally tested or supported HP Vertica configuraton. Nevetheless, we hope you feel encouraged to experiment, see what works, and post your feedback and best practices back to the community. Good luck!*
