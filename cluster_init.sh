@@ -5,6 +5,16 @@
 
 autoscale_dir=/home/dbadmin/autoscale
 
+# This script can get called from bootstrap.sh potentially before the aws cli is installed by launch.sh on newly started instance.
+# So, if aws isn't installed yet, wait for it.
+
+while [ 1 ]; do
+   testAws=$(aws --version)
+   [ $? -eq 0 ] && break
+   echo "Waiting another 60s for aws CLI to be installed by instance launch script"
+   sleep 60
+done
+
 privateIp=$(aws --output=text ec2 describe-instances --filters Name=tag-key,Values=Name,Name=tag-value,Values=$autoscaling_group_name --query "Reservations[*].Instances[*].PrivateIpAddress"); echo PrivateIP: $privateIp
 
 [ -e $autoscale_dir/license.dat ] && license=$autoscale_dir/license.dat || license=CE
