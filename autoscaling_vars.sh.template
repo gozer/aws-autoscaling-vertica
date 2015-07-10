@@ -47,3 +47,7 @@ license_file=/path/to/license_file                      # path to license file, 
 k_safety=1                                              # For autoscaling between 1 and 3 nodes, set k_safety to 0 (not recommended!)
 replace_down_node_after=5				# number of minutes to wait before replacing a DOWN node. Set to 0 to disable.
 
+# if local node is a vertica cluster node, you can enable passwordless ssh as dbadmin
+# this is required to enable copy cluster from local cluster to new cluster
+myPubKey=~dbadmin/.ssh/id_rsa.pub			# path to public key for dbadmin user on this node (if exists)
+

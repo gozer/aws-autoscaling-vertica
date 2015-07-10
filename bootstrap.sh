@@ -25,10 +25,19 @@ scp -i $pem_file $pem_file dbadmin@$publicIp:/home/dbadmin/autoscale/key.pem
 scp -i $pem_file * dbadmin@$publicIp:/home/dbadmin/autoscale/
 [ "$license_file" != "CE" ] && scp -i $pem_file $license_file dbadmin@$publicIp:/home/dbadmin/autoscale/license.dat
 ssh -i $pem_file -o "StrictHostKeyChecking no" dbadmin@$publicIp chmod 400 /home/dbadmin/autoscale/key.pem
-# modify config file to reflect copied key and license files on cluster node
-cat autoscaling_vars.sh | sed -e 's/pem_file=.*/pem_file=key.pem/' | sed -e 's/license_file=.*/license_file=license.dat/' > /tmp/autoscaling_vars.sh
+
+# modify config file to reflect copied key files and license files on cluster node
+cat autoscaling_vars.sh | 
+   sed -e 's/pem_file=.*/pem_file=key.pem/' | 
+   sed -e 's/license_file=.*/license_file=license.dat/' > /tmp/autoscaling_vars.sh
 scp -i $pem_file /tmp/autoscaling_vars.sh dbadmin@$publicIp:/home/dbadmin/autoscale/autoscaling_vars.sh
 rm -f /tmp/autoscaling_vars.sh
+
+if [ -f $myPubKey ]; then
+   echo "Setup paswordless ssh for dbadmin from local node (to enable copy cluster)"
+   scp -i $pem_file $myPubKey dbadmin@$publicIp:/home/dbadmin/autoscale/srcClusterKey.pub
+   ssh -i $pem_file dbadmin@$publicIp "cat /home/dbadmin/autoscale/srcClusterKey.pub >> /home/dbadmin/.ssh/authorized_keys"
+fi
 
 echo "Configure Vertica 1-node cluster on node [$publicIp]"
 ssh -i $pem_file dbadmin@$publicIp '(

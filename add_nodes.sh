@@ -114,6 +114,11 @@ do
    scp -r $autoscaleDir/*.sh $autoscaleDir/key.pem $autoscaleDir/license.dat $n:/home/dbadmin/autoscale
    ssh $n chmod ug+sx $autoscaleDir/*.sh
    ssh $n '(echo -e "* * * * * /home/dbadmin/autoscale/read_scaledown_queue.sh\n* * * * * /home/dbadmin/autoscale/down_node_check.sh"  | crontab -)'
+   if [ -f $autoscaleDir/srcClusterKey.pub ]; then
+      echo "Setup paswordless ssh for dbadmin from source cluster (to enable copy cluster)"
+      scp $autoscaleDir/srcClusterKey.pub $n:/home/dbadmin/autoscale
+      ssh $n "cat /home/dbadmin/autoscale/srcClusterKey.pub >> /home/dbadmin/.ssh/authorized_keys"
+   fi
 done
 
 echo configure external stored procedures on new nodes [`date`]
