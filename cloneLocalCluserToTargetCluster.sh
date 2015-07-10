@@ -120,6 +120,8 @@ fi
 echo "Start database on remote cluster"
 ssh $publicIp "admintools -t start_db -d $database_name"
 
+echo "Install autoscaling on target database"
+ssh $publicIp "cd /home/dbadmin/autoscale; sh database_configure.sh"
 
 echo "Done"
 exit 0
