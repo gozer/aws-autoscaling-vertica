@@ -6,6 +6,9 @@
 echo "Create placement group for new cluster"
 aws ec2 create-placement-group --group-name $placement_group --strategy cluster
 
+echo "Make launch.sh from latest config settings"
+./makeLaunchScript.sh
+
 echo "Create Launch Configuration"
 aws autoscaling create-launch-configuration --launch-configuration-name $launch_configuration_name --image-id $image_id --key-name $key_name --security-groups $security_group_id --instance-type $instance_type --associate-public-ip-address --instance-monitoring Enabled=false --user-data file://launch.sh
 
