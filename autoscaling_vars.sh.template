@@ -26,11 +26,13 @@ key_name=EXISTING_AWS_KEY_NAME
 security_group_id=EXISTING_SECURITY_GROUP
 subnet_id=EXISTING_VPC_SUBNET_ID
 
-# We will create a new placement group, launch config, and autoscaling group, using names you provide below
-placement_group=NEW_PLACEMENT_GROUP_NAME 		# E.g. Cluster1PlacementGroup
-launch_configuration_name=NEW_LAUNCH_CONFIG_NAME 		# E.g. myVerticaAutoscalingConfig
+# We will create a new placement group and autoscaling group, using names you provide below
 autoscaling_group_name=NEW_AUTOSCALING_GROUP_NAME	# E.g. Cluster1AutoscalingGroup
-sns_topic=${autoscaling_group_name}_Scale_Event                 # E.g. ${autoscaling_group_name}_Scale_Event"
+placement_group=NEW_PLACEMENT_GROUP_NAME 		# E.g. Cluster1PlacementGroup
+
+# Launch configuration and SNS topic will be created, using names derived from the autoscaling group name
+launch_configuration_name=${autoscaling_group_name}_Config	# No need to modify - unique for each cluster
+sns_topic=${autoscaling_group_name}_Scale_Event                 # No need to modify - unique for each cluster
 
 # autoscaling settings
 min=4								# Minimum size of cluster
