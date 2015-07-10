@@ -5,6 +5,23 @@
 
 . ./autoscaling_vars.sh
 
+function show_help {
+   echo "$0 [-s <desired_node_count>]"
+   exit 0
+}
+
+while getopts "h?S:s:" opt; do
+   case "$opt" in
+   h|\?)
+      show_help
+      exit 0
+      ;;
+   S|s)
+      desired="$OPTARG"
+      ;;
+   esac
+done
+
 cat <<EOF
 Configuring Autoscaling Group: $autoscaling_group_name
 Setting
