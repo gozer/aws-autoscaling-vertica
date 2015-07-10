@@ -8,8 +8,10 @@ instanceIds=$(aws --output=text ec2 describe-instances --filters Name=tag-key,Va
 
 for instanceId in $instanceIds
 do
-   privateIps=$(aws --output=text ec2 describe-instances --instance-id $instanceId --query "Reservations[*].Instances[*].NetworkInterfaces[*].PrivateIpAddresses[*].PrivateIpAddress" | awk '{for (i=NF;i>0;i--){printf $i" "}}')
-   publicIps=$(aws --output=text ec2 describe-instances --instance-id $instanceId --query "Reservations[*].Instances[*].NetworkInterfaces[*].PrivateIpAddresses[*].Association.PublicIp")
-   echo "$instanceId: PublicIP [$publicIps], PrivateIP [$privateIps]"
+   privateIps=$(aws --output=text ec2 describe-instances --instance-id $instanceId --query "Reservations[*].Instances[*].NetworkInterfaces[*].PrivateIpAddresses[*].PrivateIpAddress" | perl -ne "chomp; print reverse join(',', map { qq/'\$_'/ } split(/ /,$_))")
+   publicIp=$(aws --output=text ec2 describe-instances --instance-id $instanceId --query "Reservations[*].Instances[*].NetworkInterfaces[*].PrivateIpAddresses[*].Association.PublicIp")
+   sql="select node_name from nodes where node_address in ($privateIps)"
+   node_name=$(ssh -i $pem_file -o "StrictHostKeyChecking no" $publicIp "vsql -qAt -c \"$sql\"")
+   echo "$node_name: PublicIP ['$publicIp'], PrivateIP [$privateIps], EC2 InstanceId [$instanceId]"
 done
 
