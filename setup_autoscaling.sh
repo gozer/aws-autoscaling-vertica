@@ -17,11 +17,10 @@ echo "Create Autoscaling Group  (one node only for bootstrapping) – this will 
 aws autoscaling create-auto-scaling-group --auto-scaling-group-name $autoscaling_group_name --launch-configuration-name $launch_configuration_name --min-size 1 --max-size $max --desired-capacity 1 --default-cooldown $cooldown --placement-group $placement_group --vpc-zone-identifier $subnet_id --termination-policies "NewestInstance" --tags Key=Name,Value=$autoscaling_group_name
 
 echo "Create SQS queue to use for Autoscaling Lifecycle Hook Notifications"
-aws sqs create-queue --queue-name ${autoscaling_group_name}_ScaleDown > /dev/null
+down_url=$(aws --output=text sqs create-queue --queue-name ${autoscaling_group_name}_ScaleDown)
 
 echo "Add EC2_INSTANCE_TERMINATING lifecycle hook to the autoscaling group"
 role_arn=$(aws --output json iam get-role --role-name autoscale_lifecyclehook | grep -i "Arn" | awk '{print $2}' | tr -d '"')
-down_url=$( aws --output=text sqs list-queues | grep "${autoscaling_group_name}_ScaleDown" | awk '{print $2}')
 down_arn=$(aws --output=json sqs get-queue-attributes --queue-url $down_url --attribute-names QueueArn | grep "QueueArn" | awk '{print $2}' | tr -d '"')
 aws autoscaling put-lifecycle-hook --lifecycle-hook-name ${autoscaling_group_name}_ScaleDown --auto-scaling-group-name $autoscaling_group_name --lifecycle-transition autoscaling:EC2_INSTANCE_TERMINATING --notification-target-arn $down_arn --role-arn $role_arn
 
