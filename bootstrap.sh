@@ -12,7 +12,7 @@ while [ 1 ]; do
 done
 
 echo "Get public IP address of first instance"
-publicIp=$(aws --output=text ec2 describe-instances --filters Name=tag-key,Values=Name,Name=tag-value,Values=$autoscaling_group_name --query "Reservations[*].Instances[*].PublicIpAddress" | head -1 |  | cut -f 1) 
+publicIp=$(aws --output=text ec2 describe-instances --filters Name=tag-key,Values=Name,Name=tag-value,Values=$autoscaling_group_name --query "Reservations[*].Instances[*].PublicIpAddress" | head -1 | cut -f 1) 
 
 echo "Copy files to node [$publicIp]"
 while [ 1 ]; do
