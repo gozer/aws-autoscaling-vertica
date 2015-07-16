@@ -8,6 +8,22 @@ autoscaleDir=/home/dbadmin/autoscale
 . $autoscaleDir/autoscaling_vars.sh
 time=$( date +"%Y-%m-%d %H:%M:%S")
 
+
+function get_instance_by_ip() {
+   ip=$1
+   instanceIds=$(aws --output=text ec2 describe-instances --filters Name=tag-key,Values=Name,Name=tag-value,Values=$autoscaling_group_name --query "Reservations[*].Instances[*].InstanceId")
+   for instanceId in $instanceIds
+   do
+      privateIps=$(aws --output=text ec2 describe-instances --instance-id $instanceId --query "Reservations[*].Instances[*].NetworkInterfaces[*].PrivateIpAddresses[*].PrivateIpAddress" | perl -ne "chomp; print reverse join(',', map { qq/'\$_'/ } split(/ /,$_))")
+      echo $privateIps | grep $ip > /dev/null
+      if [ $? -eq 0 ]; then
+         echo $instanceId
+         break
+      fi
+   done
+}
+
+
 # in non terminal mode, redirect stdout and stderr to logfile
 if [ ! -t 0 ]; then exec >> $autoscaleDir/down_node_check.log 2>&1; fi
 echo down_node_check.sh: [`date`]
@@ -28,7 +44,8 @@ if [ ! -z "$replace_down_node_after" -a $replace_down_node_after -gt 0 ]; then
       isDetected=$(vsql -qAt -c "select count(*) from autoscale.downNodes WHERE node_address='$downNode' AND datediff(MINUTE,node_down_since,'$downSince') = 0")
       if [ $isDetected -eq 0 ]; then
          # not already detected.. initiate termination
-         instId=$(vsql -qAt -c "SELECT ec2_instanceid FROM autoscale.launches WHERE node_address='$downNode' OR replace_node_address='$downNode' ORDER BY start_time DESC LIMIT 1")
+         instId=$(aws --output=text ec2 describe-instances --filters Name=tag-key,Values=Name,Name=tag-value,Values=$autoscaling_group_name Name=private-ip-address,Values=$downNode --query "Reservations[*].Instances[*].InstanceId")
+         instId=$(get_instance_by_ip $downNode)
          time=$(date +"%Y-%m-%d %H:%M:%S")
          echo "$myIp|$time|$downSince|$instId|$downNode" | \
             vsql -c "COPY autoscale.downNodes (detected_by_node, trigger_termination_time, node_down_since, ec2_instanceid, node_address) FROM STDIN"

@@ -33,16 +33,19 @@ while [ 1 ]; do
       lifecycleTransition=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["LifecycleTransition"]')
       lifecycleActionToken=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["LifecycleActionToken"]')
       eC2InstanceId=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["EC2InstanceId"]')
-      privateIp=$(vsql -qAt -c "select distinct nvl(replace_node_address,node_address) from autoscale.launches where ec2_instanceid='$eC2InstanceId'")
-      if [ ! -z "$privateIp" ]; then
-         publicIp=$(vsql -qAt -c "select distinct node_public_address from autoscale.launches where ec2_instanceid='$eC2InstanceId'")
+      privateIps=$(aws --output=text ec2 describe-instances --instance-id $eC2InstanceId --query "Reservations[*].Instances[*].NetworkInterfaces[*].PrivateIpAddresses[*].PrivateIpAddress" | perl -ne "chomp; print join(',', map { qq/'\$_'/ } reverse split(/\s+/,$_))")
+      if [ ! -z "$privateIps" ]; then
+         publicIp=$(aws --output=text ec2 describe-instances --instance-id $eC2InstanceId --query "Reservations[*].Instances[*].NetworkInterfaces[*].PrivateIpAddresses[*].Association.PublicIp")
+         # in case instance has multiple private IPs, retrieve the one use by vertica in nodes table
+         privateIp=$(vsql -qAt -c "select node_address from nodes where node_address in ($privateIps)")
+         node_name=$(vsql -qAt -c "select node_name from nodes where node_address in ($privateIps)")
          # Add each terminating instance to the autoscale.terminations table
          echo "$myIp|$time|$eC2InstanceId|$privateIp|$publicIp|$lifecycleActionToken|COLLATING INSTANCES|1" | vsql -c "COPY autoscale.terminations (queued_by_node, start_time, ec2_instanceid, node_address, node_public_address, lifecycle_action_token, status, is_running) FROM STDIN" 
          if [ $? -ne 0 ]; then 
             echo Unable to add to autoscale.terminations - exiting without deleting message
             exit 1
          fi
-         echo "Node [$privateIp] queued for termination"
+         echo "Node [$node_name / $privateIp] queued for termination"
          ((i=i+1))
       else
          echo "No Private IP found for [$eC2InstanceId] in autoscale.launches. Perhaps a rogue (old) message? Skipping"
