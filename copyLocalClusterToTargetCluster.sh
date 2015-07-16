@@ -1,8 +1,14 @@
 #! /bin/sh
 # Copyright (c) 2011-2015 by Vertica, an HP Company.  All rights reserved.
 
-# Setup and run copycluster from local cluster to the target autoscaling cluster defined 
-# by the ./autoscaling_vars.sh settings in this folder
+# Setup and run copycluster from local cluster to the target autoscaling cluster
+# Target autoscaling cluster must be identified by 'autoscaling_group_name' in the autoscaling_vars.sh file
+# in the local directory. This is usually acomplished by creating the target cluster from a node on the source cluster.
+# The target cluster size MUST be the same as the local cluster size. 
+# The target cluster database name and password should be the same as the local cluster
+
+
+
 
 . ./autoscaling_vars.sh
 
@@ -58,6 +64,12 @@ if [ -z "$localdb" ]; then
 else
    echo "Active local database: $localdb"
 fi
+if [ $localdb != $database_name ]; then
+   echo "Local database name => $localdb"
+   echo "Target database name => $database_name"
+   echo "Target auto scaling cluster [$autoscaling_group_name] database name and dbadmin password must match local database"
+   exit 1
+fi
 
 # get Public IP address for remote cluster
 echo "Get public IP address of an instance in remote cluster"
@@ -74,6 +86,7 @@ local_node_count=$(vsql $pwdArg -qAt -c "select count(*) from nodes")
 remote_node_count=$(vsql -h $publicIp $pwdArg -qAt -c "select count(*) from nodes")
 if [ "$local_node_count" != "$remote_node_count" ]; then
    echo "ERROR: Local node count [$local_node_count] does not match remote node count [$remote_node_count]"
+   echo "Change node count of remote cluster using 'scale_cluster.sh -s $local_node_count'"
    exit 1
 fi
 echo "Local and Remote clusters have $local_node_count nodes"
@@ -83,7 +96,7 @@ local_node_names=($(vsql $pwdArg -qAt -c "select node_name from nodes order by n
 remote_node_names=($(vsql -h $publicIp $pwdArg -qAt -c "select node_name from nodes order by node_name"))
 remote_node_addrs=($(vsql -h $publicIp $pwdArg -qAt -c "select node_address from nodes order by node_name"))
 
-# configure node names on remote cluster if names don't align
+# configure database node names on remote cluster if names don't align
 if [ "${local_node_names[*]}" != "${remote_node_names[*]}" ]; then
    echo "Cluster node names do not match.. configuring names on remote cluster"
    site_host_file="site_host.txt"; rm -f $site_host_file
