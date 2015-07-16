@@ -47,7 +47,7 @@ instId=$(curl -s http://169.254.169.254/latest/meta-data/instance-id); echo Inst
 privateIp=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4); echo PrivateIP: $privateIp
 publicIp=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4); echo PublicIP: $publicIp
 macs=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/)
-subnetCIDR=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$macs/subnet-ipv4-cidr-block/)
+subnetCIDR=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$macs/subnet-ipv4-cidr-block/); echo subnetCIDR: $subnetCIDR
 mask=$(echo $subnetCIDR | cut -d"/" -f 2)
 eni=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$macs/interface-id)
 
@@ -81,10 +81,13 @@ downNode=$(vsql -qAt -U dbadmin -h $connectTo -c "SELECT replace_node_address FR
 if [ ! -z "$downNode" ]; then
    echo "Adopting Private IP Address of DOWN node [$downNode]. Original Private IP Address [$privateIp]"
    aws ec2 assign-private-ip-addresses --network-interface $eni --private-ip-addresses $downNode
-   ip address add $downNode/$mask brd + dev eth0
+   cmd="ip address add $downNode/$mask brd + dev eth0"
+   echo $cmd >> /etc/rc.local
+   $cmd
    echo "Modify default route to use new IP address as the src"
-   ip route delete $subnetCIDR
-   ip route add $subnetCIDR dev eth0 src $downNode
+   cmd="ip route delete $subnetCIDR; ip route add $subnetCIDR dev eth0 src $downNode"
+   echo $cmd >> /etc/rc.local
+   $cmd
    echo "Change hostname to use new IP"
    new_hostname=`echo "ip-$downNode" | sed -e 's/\./-/g'`
    hostname $new_hostname
