@@ -3,13 +3,14 @@
 
 # This script will attempt to copy a local database to a remote AWS cluster.
 # 1. The remote AWS cluster must be configured from a node on the local cluster, using the aws-autoscaling-vertica package
+#     - this script must be run from that same node (it leverages the aws-autoscaling-vertica configuration)
 # 2. The remote cluster must be scaled to be the same node count as the local cluster
+# 4  If database names or node names do not match between local an dremote clusters, the database on the remote
+#    cluster will be recreated to match.
 # 4. The path used for data and catalog files will be replicated on the remote cluster
 #     - if the paths do not exist on remote cluster nodes, they will be created as symblic links to '/vertica/data'
+#       (the default data/catalog directory on the Vertica AWS machine image)
 #     - There must be sufficient disk space on the remote cluster nodes
-
-# If local and remote database name, node names or paths do not align, then the database will be 
-# automatically recreated on the remote cluster with name, node names and paths matching the source cluster.
 
 
 . ./autoscaling_vars.sh
