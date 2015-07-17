@@ -16,10 +16,10 @@
 . ./autoscaling_vars.sh
 
 # defaults
-configFile="./copyclusterConfig.ini"
-pwdFile="./copyclusterPasswd.ini"
+PWD=$(pwd)
+configFile="${PWD}/copyclusterConfig.ini"
+pwdFile="${PWD}/copyclusterPasswd.ini"
 user=dbadmin
-userArg="-U $user"
 pwd="$password"
 pwdArg="-w $pwd"
 
@@ -211,12 +211,12 @@ chmod 600 $pwdFile
 echo "Create backup copyCluster config [$configFile]"
 cat <<EOF > $configFile
 [Misc]
-snapshotName = CopyTo_
+snapshotName = CopyTo_$autoscaling_group_name
 restorePointLimit = 1
 passwordFile = $pwdFile
 
 [Database]
-dbName = $db
+dbName = $database_name
 dbUser = $user
 
 [Transmission]
@@ -242,6 +242,9 @@ echo "Backup Config file created: $configFile"
 
 echo "Stop database on remote cluster"
 ssh $publicIp "admintools -t stop_db -d $database_name"
+
+# workaround for VER-37726 (fixed in 7.1 SP2)
+mkdir -p /tmp/vbr
 
 cmd="vbr.py -t copycluster --config-file $configFile"
 echo "Run the copy cluster command [$cmd]"
