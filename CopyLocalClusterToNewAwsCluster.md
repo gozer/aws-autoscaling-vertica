@@ -55,13 +55,16 @@ This step may be run periodically to incrementally resynchronize the clusters.
 Install the [HP Vertica AWS Auto Scaling](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) open source package on one of your existing cluster nodes. 
 
 Set up the config file as instructed in the directions, to specify your credentials, region, subnet, etc. 
-Be sure to:
-1. set `autoscaling_group_name` variable to specify a unique name for your new cluster
-2. set the `desired` cluster size to match the node count of your existing cluster
-3. set `datbase_name` and `password` to match your source database
-4. ensure your subnet Network ACLs (if applicable), and your VPC and EC2 instance security groups are all set up to allow SSH (port 22), vsql (port 5433) and rsync (port 50000) traffic between your source and destination cluster nodes.
+Be sure to:  
+1. set `autoscaling_group_name` variable to specify a *unique* name for your new cluster  
+2. set the `desired` cluster size to match the node count of your existing cluster  
+3. set `datbase_name` and `password` to match your source database  
+4. ensure your subnet Network ACLs (if applicable), and your VPC and EC2 instance security groups are all set up to allow the following protocols between your source cluster and the new target cluster:
+  - SSH (port 22)  
+  - vsql (port 5433)  
+  - rsync (port 50000)  
 
-Once you have the config file set up the way you want it, you can create your new cluster by running the following commands as described in the (README.md)[https://github.com/vertica/aws-autoscaling-vertica/blob/master/README.md]:
+Once you have the configuration file set up the way you want it, you can create your new cluster by running the following commands as described in the (README.md)[https://github.com/vertica/aws-autoscaling-vertica/blob/master/README.md]:
 ```
 ./setup_autoscaling.sh
 ./bootstrap.sh
@@ -80,11 +83,16 @@ You are now ready to clone your local database to the new cluster.
 
 Run the `copyCluster.sh` script from the autoscale directory where you configured the new target cluster.
 
-The script will connect to both local and target clusters, comparing database names, node count, node names, and data & catalog file paths.
-If data and catalog directory paths used on the source database exist on the target cluster nodes, these paths will use used directly, otherwise the paths will be recreated as symbolic links to the `/vertica/data` directory used by default on the Vertica Amazon Machine Image (AMI). the database will be dropped and recreated on the target cluster, to use the new matching paths.
+The script will connect to both local and target clusters, comparing database names, node count, node names, and data & catalog file paths.  
+
+If data and catalog directory paths used on the source database do not exist on the target cluster nodes, they will be recreated as symbolic links to the `/vertica/data` directory (used as the default location by the Vertica Amazon Machine Image). The database will be dropped and recreated to use the new matching paths on the target cluster.
+
 If the node names used on the source cluster do not match those used on the target cluster, the target cluster database will be dropped and recreated to use the same node names as the source.  
 
-Once database names, passwords, node counts, node names and paths are all aligned, the database is stopped on the target cluster, and the HP Vertica vbr.py copycluster tool is executed to copy data from the source nodes to the target nodes. The copy is done using the target cluster public IP addresses, thus supporting copies from on premise clusters or across AWS regions and availability zone subnets.
+Once database names, passwords, node counts, node names and paths are all aligned, the database is stopped on the target cluster, and the HP Vertica vbr.py copycluster tool is executed to copy data from the source nodes to the target nodes. 
+
+The target cluster's public IP addresses are used for the data transfer. Copies will work across AWS regions, across availability zone subnets, and from on-premise to AWS cloud based clusters, so long as the traffic protocols identified above are not blocked.
+
 
  
 
