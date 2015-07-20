@@ -4,38 +4,38 @@ Our latest enhancement to the [HP Vertica AWS Auto Scaling](https://community.de
  
 Here are some of the reasons you might find this capability useful:
  
-#### Create a Disaster Recovery cluster
+- **Create a Disaster Recovery cluster**
 
-By replicating your database to a "cluster in the cloud", you establish a working backup database that you can use if disaster strikes your primary cluster.
+  By replicating your database to a "cluster in the cloud", you establish a working backup database that you can use if disaster strikes your primary cluster.
 
-You can save money by suspending the backup cluster when it is not in use, and resuming it again when needed. Use the `suspendCluster.sh` and `resumeCluster.sh` utilities provided with the HP Vertica AWS Auto Scaling open-source package. While the cluster is suspended, your AWS usage charges will be significantly reduced.
+  You can save money by suspending the backup cluster when it is not in use, and resuming it again when needed. Use the `suspendCluster.sh` and `resumeCluster.sh` utilities provided with the HP Vertica AWS Auto Scaling open-source package. While the cluster is suspended, your AWS usage charges will be significantly reduced.
 
-Once your backup cluster has been established, you can periodically re-synchronize it with the primary cluster to keep it up to date.  
+  Once your backup cluster has been established, you can periodically re-synchronize it with the primary cluster to keep it up to date.  
 
-If your primary HP Vertica cluster is hosted on AWS, you can defend against disaster by creating your backup cluster in a subnet hosted in a different AWS Availability Zone.
-
-
-#### Create Sandbox Clusters
-
-You can easily create on-demand sandbox environments for development and test by cloning your production database to the AWS cloud. You can create as many replica clusters as you need, and, when you are done, you can terminate them. 
-
-This is a great way to try and test changes to your application, schema, projections, etc., before comitting them to the production cluster. By leveraging the auto scaling features of your new replica cluster, you can also experiment with the effects of scaling the cluster size up and down, again before committing the changes to production.
+  If your primary HP Vertica cluster is hosted on AWS, you can defend against disaster by creating your backup cluster in a subnet hosted in a different AWS Availability Zone.
 
 
-#### Establish Regional Database Replicas 
+- **Create Sandbox Clusters**
+
+  You can easily create on-demand sandbox environments for development and test by cloning your production database to the AWS cloud. You can create as many replica clusters as you need, and, when you are done, you can terminate them. 
+
+  This is a great way to try and test changes to your application, schema, projections, etc., before comitting them to the production cluster. By leveraging the auto scaling features of your new replica cluster, you can also experiment with the effects of scaling the cluster size up and down, again before committing the changes to production.
+
+
+- **Establish Regional Database Replicas**
 
 You may want to load balance your application workload across replicated clusters in multiple AWS regions. 
 
 You should engineer your ETL processes to keep the replica clusters current. Replicas can can be periodically resynchronised with the primary cluster during maintainance windows. 
 
 
-#### Migrate from On-premise to the Cloud.
+- **Migrate from On-premise to the Cloud**
 
-You can set up experimental copies of your on-premise database in the AWS cloud, see how it works, and when you are ready you can clone the most recent data before going live with your new cloud based cluster.
+  You can set up experimental copies of your on-premise database in the AWS cloud, see how it works, and when you are ready you can clone the most recent data before going live with your new cloud based cluster.
 
-#### Take advantage of Auto Scaling
+- **Take advantage of Auto Scaling**
 
-Copy data from your existing on-premise or cloud based cluster to a new AWS Auto Scaling cluster, and take advantage of all the features offered by [auto scaling](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) and [Elastic Load Balancing](https://github.com/vertica/aws-autoscaling-vertica/blob/master/AWS-ElasticLoadBalancer-for-Vertica.md).
+  Copy data from your existing on-premise or cloud based cluster to a new AWS Auto Scaling cluster, and take advantage of all the features offered by [auto scaling](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) and [Elastic Load Balancing](https://github.com/vertica/aws-autoscaling-vertica/blob/master/AWS-ElasticLoadBalancer-for-Vertica.md).
 
 
 ## Overview
