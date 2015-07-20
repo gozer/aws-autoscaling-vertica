@@ -87,11 +87,22 @@ The script will connect to both local and target clusters, comparing database na
 
 If data and catalog directory paths used on the source database do not exist on the target cluster nodes, they will be recreated as symbolic links to the `/vertica/data` directory (used as the default location by the Vertica Amazon Machine Image). The database will be dropped and recreated to use the new matching paths on the target cluster.
 
-If the node names used on the source cluster do not match those used on the target cluster, the target cluster database will be dropped and recreated to use the same node names as the source.  
+If the node names used on the source cluster do not match those used on the target cluster, this will also cause the target cluster database to be dropped and recreated to use the same node names as the source.  
 
-Once database names, passwords, node counts, node names and paths are all aligned, the database is stopped on the target cluster, and the HP Vertica vbr.py copycluster tool is executed to copy data from the source nodes to the target nodes. 
+Once database names, passwords, node counts, node names and paths are all verified, the database is stopped on the target cluster, and the HP Vertica vbr.py copycluster tool is executed to copy data from the source nodes to the target nodes.
 
-The target cluster's public IP addresses are used for the data transfer. Copies will work across AWS regions, across availability zone subnets, and from on-premise to AWS cloud based clusters, so long as the traffic protocols identified above are not blocked.
+The target cluster's public IP addresses are used for the copycluster data transfer (using the rsync protocol). Copies will work across AWS regions, across availability zone subnets, and from on-premise to AWS cloud based clusters, so long as the traffic protocols identified above are not blocked. 
+
+Once copycluster has completed, the Vertica catalog is automatically edited on the target cluster to make sure that the spread protocol is configured for point-to-point mode (a requirements for AWS clusters). 
+
+Finally, the target database is started and configured with the settings required for the auto scaling features to work. 
+
+And that's it! You now have a working copy of your source database cluster. 
+
+You can rerun the `copyCluster.sh` at any time to efficiently resynchronise your database. Only changed data files will be transferred. Note, however, that the target database is unavailable during the process, so if you are using the target in production, schedule the copies during mainenance windows.
+
+
+
 
 
  
