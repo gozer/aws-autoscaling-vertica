@@ -60,11 +60,11 @@ Be sure to:
 2. set the `desired` cluster size to match the node count of your existing cluster  
 3. set `datbase_name` and `password` to match your source database  
 4. ensure your subnet Network ACLs (if applicable), and your VPC and EC2 instance security groups are all set up to allow the following protocols between your source cluster and the new target cluster:
-  - SSH (port 22)  
-  - vsql (port 5433)  
-  - rsync (port 50000)  
+  - SSH (TCP/22)  
+  - vsql (TCP/5433)  
+  - rsync (TCP/50000)  
 
-Once you have the configuration file set up the way you want it, you can create your new cluster by running the following commands as described in the (README.md)[https://github.com/vertica/aws-autoscaling-vertica/blob/master/README.md]:
+Once you have the configuration file set up the way you want it, you can create your new cluster by running the following commands as described in the [README.md](https://github.com/vertica/aws-autoscaling-vertica/blob/master/README.md):
 ```
 ./setup_autoscaling.sh
 ./bootstrap.sh
@@ -74,14 +74,14 @@ Once you have the configuration file set up the way you want it, you can create 
 If you want to clone your cluster multiple times, then make multiple copies of the autoscale directory, once for each target cluster. Specify unique values for `autoscaling_group_name` in each copy of the config file, and create your clusters by repeating the above commands in each directory. 
 
 Use `cluster_ip_addresses.sh` to check that the cluster scaleup has completed, and that your new cluster has the required number of nodes.
-You new cluster has also been set up with passwordless ssh access from your source cluster nodes, for the dbadmin user. This is not only a convenience, but a pre-requisite for the HP Vertica copycluster task.
+You new cluster has also been set up with passwordless ssh access from your source cluster nodes, for the dbadmin user. This is not just a convenience, but a pre-requisite for the HP Vertica copycluster task.
 
 You are now ready to clone your local database to the new cluster.
 
 
 ## Cloning the database
 
-Run the `copyCluster.sh` script from the autoscale directory where you configured the new target cluster.
+Run the `copyCluster.sh` script from the autoscale directory where you configured the new target cluster. This script is now included with the [HP Vertica AWS Auto Scaling](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) open source package.
 
 The script will connect to both local and target clusters, comparing database names, node count, node names, and data & catalog file paths.  
 
@@ -93,13 +93,22 @@ Once database names, passwords, node counts, node names and paths are all verifi
 
 The target cluster's public IP addresses are used for the copycluster data transfer (using the rsync protocol). Copies will work across AWS regions, across availability zone subnets, and from on-premise to AWS cloud based clusters, so long as the traffic protocols identified above are not blocked. 
 
-Once copycluster has completed, the Vertica catalog is automatically edited on the target cluster to make sure that the spread protocol is configured for point-to-point mode (a requirements for AWS clusters). 
+Once copycluster has completed, the target database is configured to make sure that the spread protocol uses point-to-point mode rather than broadcast mode (a requirement for AWS). 
 
-Finally, the target database is started and configured with the settings required for the auto scaling features to work. 
+Finally, the target database is started and configured with the settings required for auto scaling. And that's it! You now have a working copy of your database running in the AWS cloud. 
 
-And that's it! You now have a working copy of your source database cluster. 
+You can rerun the `copyCluster.sh` script at any time to efficiently resynchronize your database - only the changed data files will be transferred. 
+The target database will be unavailable during the copy process, so if you are using it for production then you should schedule the copies during mainenance windows.
 
-You can rerun the `copyCluster.sh` at any time to efficiently resynchronise your database. Only changed data files will be transferred. Note, however, that the target database is unavailable during the process, so if you are using the target in production, schedule the copies during mainenance windows.
+When you aren't using your AWS cluster, you can save money running the `suspendCluster.sh` tool to shut down the database and your EC2 instances. When you are read to use it again, perhaps to resynchronize, you can restart it by running `resumeCluster.sh`.
+
+-------------
+
+This HP Vertica AWS Auto Scale package (including the new copy cluster feature) is not a formally tested or supported HP Vertica product. Nevertheless, we hope you feel encouraged to experiment, see what works, and post your feedback and best practices back to the community. It is free for you to use and redistribute subject to the terms in the included license.txt file.
+
+Copyright (c) 2011-2015 by Vertica, an HP Company. All rights reserved.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
