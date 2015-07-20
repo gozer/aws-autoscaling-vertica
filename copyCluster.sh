@@ -11,6 +11,8 @@
 #     - if the paths do not exist on remote cluster nodes, they will be created as symblic links to '/vertica/data'
 #       (the default data/catalog directory on the Vertica AWS machine image)
 #     - There must be sufficient disk space on the remote cluster nodes
+# 5. A Catalog editor batch script is used (via admintools) on the target cluster to ensure it is configured to run in point-to-point
+#    mode ( arequirement for AWS)
 
 
 . ./autoscaling_vars.sh
