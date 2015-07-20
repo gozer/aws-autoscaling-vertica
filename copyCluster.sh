@@ -255,6 +255,17 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# AWS clusters MUST run with spread in point-to-point mode.. broadcast mode does not work.
+# We will use the catalog editor to ensure that spread controlmode is set to pt2pt
+echo "Setting target cluster to run in spread point-to-point controlmode (reqd on AWS)"
+ssh $publicIp "(
+   echo "set singleton GlobalSettings controlMode pt2pt" > /tmp/setcontrolmode.cmd
+   echo "spreadconf overwrite" >> /tmp/setcontrolmode.cmd
+   echo "versionsjson" >> /tmp/setcontrolmode.cmd
+   echo "commit" >> /tmp/setcontrolmode.cmd
+   admintools -t dist_catalog_edit -f setcontrolmode.cmd -d $database_name
+)"
+
 echo "Start database on remote cluster"
 ssh $publicIp "admintools -t start_db -d $database_name"
 
