@@ -57,7 +57,7 @@ Be sure to:
 2. set `desired` cluster size to match the node count of your existing cluster  
 3. set `database_name` and `password` to match your source database  
 4. ensure your subnet Network ACLs (if applicable), and your VPC and EC2 instance security groups are all set up to allow the following protocols between your source cluster and the new target cluster:
-  - SSH (TCP/22)  
+  - ssh (TCP/22)  
   - vsql (TCP/5433)  
   - rsync (TCP/50000)  
 
