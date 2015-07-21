@@ -98,7 +98,7 @@ The target cluster's public IP addresses are used for the copycluster data trans
 
 Once the copy has completed, the target database is automatically configured to make sure that the spread protocol uses point-to-point mode rather than broadcast mode (a requirement for AWS). 
 
-Finally, the target database is started and configured with the settings required for auto scaling. And that's it! You now have a working copy of your database running in the AWS cloud. 
+Finally, the target database is started and configured with the settings required for auto scaling. And that's it! You now have a working copy of your database running (with auto scaling and node replacement features) in the AWS cloud. 
 
 *The HP Vertica AWS Auto Scale package (including the new copy cluster feature) is not a formally tested or supported HP Vertica product. Nevertheless, we hope you feel encouraged to experiment, see what works, and post your feedback and best practices back to the community.*
 
