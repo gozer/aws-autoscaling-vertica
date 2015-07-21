@@ -84,7 +84,7 @@ Run the `copyCluster.sh` script from the autoscale directory where you configure
 You can rerun the `copyCluster.sh` script at any time to efficiently resynchronize your database - only the changed data files will be transferred. Be aware that the target database will be unavailable during the copy process, so if you are using it for production then you should schedule the copies during maintenance windows.
 
 
-If the data and catalog directory paths used on the source database do not exist on the target cluster nodes, they will be recreated as symbolic links to the `/vertica/data` directory (used as the default location by the Vertica Amazon Machine Image). The database will be automatically recreated to use the matching paths on the target cluster. The target nodes must have sufficient disk space for the copy to be sucessful - the copyCluster tool does not currently perform any disk space checks.
+If the data and catalog directory paths used on the source database do not exist on the target cluster nodes, they will be recreated as symbolic links to the `/vertica/data` directory (used as the default location by the Vertica Amazon Machine Image). The database will be automatically recreated to use the matching paths on the target cluster. The target nodes must have sufficient disk space for the copy to be successful - the copyCluster tool does not currently perform any disk space checks.
 
 If the node names used on the source cluster do not match those used on the target cluster, this will also cause the target cluster database to be recreated to use the same node names as the source.  
 
