@@ -1,6 +1,6 @@
 # Cloning an HP Vertica cluster to AWS
 
-Our latest enhancement to the [HP Vertica AWS Auto Scaling](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) open-source package makes it quite easy to create a working replica of your existing cloud hosted or on-premise HP Vertica cluster.
+The latest enhancement to the [HP Vertica AWS Auto Scaling](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) open-source package makes it quite easy to create a working replica of your existing cloud hosted or on-premise HP Vertica cluster.
  
 Here are some of the reasons you might find this capability useful:
  
@@ -29,7 +29,7 @@ Here are some of the reasons you might find this capability useful:
 
 - **Migrate from your on-premise datacenter to the Cloud**
 
-  You can set up experimental copies of your on-premise database in the AWS cloud, see how it works, and when you are ready you can clone the most recent data before going live with your new AWS-hosted HP Vertica cluster.
+  You can set up experimental copies of your on-premise database in the AWS cloud, see how they work, and when you are ready you can clone the most recent data before going live with your new AWS-hosted HP Vertica cluster.
 
 - **Take advantage of Auto Scaling**
 
