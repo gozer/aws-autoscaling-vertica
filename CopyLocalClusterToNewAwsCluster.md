@@ -6,13 +6,9 @@ Here are some of the reasons you might find this capability useful:
  
 - **Create a Disaster Recovery Cluster**
 
-  By replicating your database to a "cluster in the cloud", you can establish a working backup database that you can use if disaster strikes your primary cluster.
+  By replicating your database to a "cluster in the cloud", you can establish a working backup database that you can use if disaster strikes your primary cluster. Once your backup cluster has been established, you can periodically (and incrementally) re-synchronize it with the primary cluster to keep it up to date. 
 
-  You can save money by suspending the backup cluster when it is not in use, and resuming it again when needed. Use the `suspendCluster.sh` and `resumeCluster.sh` utilities provided with the HP Vertica AWS Auto Scaling open-source package. While the cluster is suspended, your AWS usage charges will be significantly reduced.
-
-  Once your backup cluster has been established, you can periodically (and incrementally) re-synchronize it with the primary cluster to keep it up to date.  
-
-  If your primary HP Vertica cluster is hosted on AWS, you can defend against datacenter disaster by creating your backup cluster in a subnet hosted in a different AWS Availability Zone.
+  Save money by suspending the backup cluster when it is not in use, and resuming it again when needed. Use the `suspendCluster.sh` and `resumeCluster.sh` utilities provided with the HP Vertica AWS Auto Scaling open-source package. While the cluster is suspended, your AWS usage charges will be significantly reduced.
 
 
 - **Create Sandbox Clusters**
