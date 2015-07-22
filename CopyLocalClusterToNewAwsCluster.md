@@ -85,7 +85,7 @@ You can rerun the `copyCluster.sh` script at any time to efficiently resynchroni
 
 The `copyCluster.sh` script uses HP Vertica's [copycluster](http://my.vertica.com/docs/7.1.x/HTML/index.htm#Authoring/AdministratorsGuide/BackupRestore/CopyingTheDatabaseToAnotherCluster.htm?Highlight=copycluster) tool to transfer Vertica database files from the source cluster nodes to the target cluster nodes, using the rsync protocol. These files are highly compressed, and each time the tool is run it will incrementally copy only files that have been created since the previous time it was run, so the process is very efficient. 
 
-Because the database catalog and data files are copied (unaltered) from the source to the target cluster, the target cluster must mirror the source cluster in the follow ways: 
+Because the database catalog and data files are copied (unaltered) from the source to the target cluster, the target must align with the source in the following: 
 
   1. Number of Nodes: The `copyCluster.sh` script will check that the number of nodes in source and destination clusters match. If they do not, the script will report an error and abort. You can resize the target cluster to the correct number of nodes by running the `scaleCluster.sh` script.
 
