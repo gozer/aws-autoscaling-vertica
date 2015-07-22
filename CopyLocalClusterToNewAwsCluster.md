@@ -83,17 +83,17 @@ Run the `copyCluster.sh` script from the autoscale directory where you configure
 
 You can rerun the `copyCluster.sh` script at any time to efficiently resynchronize your database - only the changed data files will be transferred. Be aware that the target database will be unavailable during the copy process, so if you are using it for production then you should schedule the copies during maintenance windows.
 
-HP Vertica's [copycluster](http://my.vertica.com/docs/7.1.x/HTML/index.htm#Authoring/AdministratorsGuide/BackupRestore/CopyingTheDatabaseToAnotherCluster.htm?Highlight=copycluster) is used to transfer Vertica database files from the source cluster nodes to the target cluster nodes, using the rsync protocol. These files are highly compressed, and each time the tool is run it will incrementally copy only files that have been created since the previous time it was run, so the process is very efficient. 
+The `copyCluster.sh` script uses HP Vertica's [copycluster](http://my.vertica.com/docs/7.1.x/HTML/index.htm#Authoring/AdministratorsGuide/BackupRestore/CopyingTheDatabaseToAnotherCluster.htm?Highlight=copycluster) tool to transfer Vertica database files from the source cluster nodes to the target cluster nodes, using the rsync protocol. These files are highly compressed, and each time the tool is run it will incrementally copy only files that have been created since the previous time it was run, so the process is very efficient. 
 
-Because the copycluster task copies the database catalog and data files from the source to the target cluster without modification, it is required that the target cluster has the (i) same number of nodes, (ii) that the nodes have the same names, (iii) that the database has the same name, and (iv) that the files are stored in the same locations on disk. 
+Because the database catalog and data files are copied (unaltered) from the source to the target cluster, the target cluster must mirror the source cluster in the follow ways: 
 
-*Number of Nodes* The `copyCluster.sh` script will check that the number of nodes in source and destination clusters match. If they do not, the script will report an error and abort. You can resize the target cluster to the correct number of nodes by running the `scaleCluster.sh` script.
+  1. Number of Nodes: The `copyCluster.sh` script will check that the number of nodes in source and destination clusters match. If they do not, the script will report an error and abort. You can resize the target cluster to the correct number of nodes by running the `scaleCluster.sh` script.
 
-*Node names:* If the node names used by the two clusters do not match, then the target cluster will be reconfigured and a new target database created to use the same node names as the source.
+  2. Node names: If the node names used by the two clusters do not match, then the target cluster will be reconfigured and a new target database created to use the same node names as the source.
 
-*Database Name:* If the database names for the active database on the two clusters do not match, the `copyCluster.sh` script will stop the target database and create a new empty database with the name and dbadmin password used by the source database.
+  3. Database Name: If the database names for the active database on the two clusters do not match, the `copyCluster.sh` script will stop the target database and create a new empty database with the name and dbadmin password used by the source database.
 
-*File locations:* If the data and catalog directory paths used on the source database do not exist on the target cluster nodes, they will be recreated as symbolic links to the `/vertica/data` directory (this is the default location used by the Vertica Amazon Machine Image). The target database will be automatically recreated to use the matching paths. The target nodes must have sufficient disk space for the copy to be successful - the copyCluster tool does not currently perform any disk space checks.
+  4. File locations: If the data and catalog directory paths used on the source database do not exist on the target cluster nodes, they will be recreated as symbolic links to the `/vertica/data` directory (this is the default location used by the Vertica Amazon Machine Image). The target database will be automatically recreated to use the matching paths. The target nodes must have sufficient disk space for the copy to be successful - the copyCluster tool does not currently perform any disk space checks.
 
 Once database names, passwords, node counts, node names and paths are all verified, the database is stopped on the target cluster, and the HP Vertica vbr.py copycluster tool is executed to copy all new data files from each source node to the corresponding target node.
 
