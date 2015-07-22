@@ -95,7 +95,7 @@ Because the database catalog and data files are copied (unaltered) from the sour
 
   4. File locations: If the data and catalog directory paths used on the source database do not exist on the target cluster nodes, they will be recreated as symbolic links to the `/vertica/data` directory (this is the default location used by the Vertica Amazon Machine Image). The target database will be automatically recreated to use the matching paths. The target nodes must have sufficient disk space for the copy to be successful - the copyCluster tool does not currently perform any disk space checks.
 
-Once database names, passwords, node counts, node names and paths are all verified, the database is stopped on the target cluster, and the HP Vertica vbr.py copycluster tool is executed to copy all new data files from each source node to the corresponding target node.
+When the above items are aligned and verified, the target database is stopped, and the HP Vertica vbr.py copycluster tool is executed to copy all new data files from each source node to the corresponding target node.
 
 The target cluster's public IP addresses are used for the copycluster data transfer. Copies will work between AWS regions, between availability zone subnets, and from on-premise to AWS cloud based clusters, so long as the traffic protocols identified above are not blocked. 
 
