@@ -38,7 +38,7 @@ There are two main tasks involved:
 
 1.	Create a new target cluster using the HP Vertica AWS Auto Scaling open source package installed on one of the nodes of your existing cluster. 
 
-2.	Clone the database to the new target cluster. You can repeat this step periodically to incrementally resynchronize the clusters.
+2.	Clone your database to the new target cluster. You can repeat this step periodically to incrementally resynchronize the clusters.
  
 <img style="margin-left: 100px;" src="images/CopyCluster.png" alt="Architecture" height="300" width="480">
 
