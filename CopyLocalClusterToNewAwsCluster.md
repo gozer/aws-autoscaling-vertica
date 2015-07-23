@@ -2,7 +2,7 @@
 
 This enhancement to the [HP Vertica AWS Auto Scaling](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) open-source package makes it quite easy to create a working replica of your existing cloud hosted or on-premise HP Vertica cluster.
  
-Here are some of the reasons you might find this capability useful:
+You may want to clone your HP Vertica cluster to:
  
 - **Create a Disaster Recovery Cluster**
 
@@ -20,37 +20,34 @@ Here are some of the reasons you might find this capability useful:
 
 - **Establish Regional Database Replicas**
 
-  You may want to load balance your application workload across duplicate clusters in multiple AWS regions. You can use the new copyCluster feature to establish your regional replicas, and to periodically resynchronize them with your master database during scheduled maintenance windows. 
+  You may want to load balance your application workload across duplicate clusters in multiple AWS regions. You can use the new `copyCluster.sh` script to establish your regional replicas, and to periodically resynchronize them with your master database during scheduled maintenance windows.  
 
 
-- **Migrate from your on-premise datacenter to the Cloud**
+- **Migrate from your on-premise datacenter to the cloud**
 
   You can set up experimental copies of your on-premise database in the AWS cloud, see how they work, and when you are ready you can clone the most recent data before going live with your new AWS-hosted HP Vertica cluster.
 
 - **Take advantage of Auto Scaling**
 
-  Copy data from your existing on-premise or cloud based cluster to a new AWS Auto Scaling cluster, and take advantage of all the features offered by [auto scaling](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) and [Elastic Load Balancing](https://github.com/vertica/aws-autoscaling-vertica/blob/master/AWS-ElasticLoadBalancer-for-Vertica.md).
+  Copy data from your existing on-premise or cloud based cluster to a new AWS Auto Scaling cluster, and take advantage of all the features offered by [Auto Scaling](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) and [Elastic Load Balancing](https://github.com/vertica/aws-autoscaling-vertica/blob/master/AWS-ElasticLoadBalancer-for-Vertica.md).
 
 
-## Overview
+## Task Overview
 
-There are two main steps to cloning your database cluster:
+There are two main tasks involved:
 
-1. Create a new target cluster by installing the [HP Vertica AWS Auto Scaling](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) open source package on one of the nodes of your existing cluster. 
-Follow the instructions to setup the configuration, making sure you match the database name and password, and that you specify that the new cluster has a desired node count matching the number of nodes in your local cluster.
+1.	Create a new target cluster using the HP Vertica AWS Auto Scaling open source package installed on one of the nodes of your existing cluster. 
 
-2. Once the new cluster is up and running, use the `copyCluster.sh` script to initiate the cloning process. The script will verify the connectivity between the two clusters, and ensure that the node names and data file paths match. Once everything is aligned, the HP Vertica [copycluster](http://my.vertica.com/docs/7.1.x/HTML/index.htm#Authoring/AdministratorsGuide/BackupRestore/CopyingTheDatabaseToAnotherCluster.htm?Highlight=copycluster) task is used to replicate the local database to the remote cluster.
-This step may be run periodically to incrementally resynchronize the clusters.
-
+2.	Clone the database to the new target cluster. You can repeat this step periodically to incrementally resynchronize the clusters.
  
 <img style="margin-left: 100px;" src="images/CopyCluster.png" alt="Architecture" height="300" width="480">
 
 
-## Setup target cluster
+## Task 1: Create a Target Cluster
 
 Install the [HP Vertica AWS Auto Scaling](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) open source package on one of your existing cluster nodes. 
 
-Set up the configuration file as instructed in the directions, to specify your credentials, region, subnet, license, etc. Choose EC2 instance types to provide sufficient cpu and memory resources for your projected workload on the target cluster, and sufficient disk space to hold your database.
+Set up the configuration file as instructed in the directions, to specify your credentials, region, subnet, license, etc. Choose EC2 instance types to provide sufficient CPU and memory resources for your projected workload on the target cluster, and sufficient disk space to hold your database.
 
 Be sure to:  
 1. set `autoscaling_group_name` variable to specify a *unique* name for your new cluster  
@@ -72,16 +69,18 @@ If you want to clone your cluster multiple times, then make multiple copies of t
 
 Use `cluster_ip_addresses.sh` to check that the cluster scaleup has completed, and that your new cluster has the required number of nodes.
 
-The new cluster has been automatically enabled with passwordless ssh access from your source cluster nodes, for the dbadmin user. This is not just a convenience, but a pre-requisite for the HP Vertica copycluster task.
+The new cluster has been automatically enabled with passwordless ssh access from your source cluster nodes, for the dbadmin user. This is not just a convenience, but a pre-requisite for the next task.
 
 You are now ready to clone your local database to the new cluster.
 
 
-## Cloning the database
+## Task 2: Clone the Database
 
-Run the `copyCluster.sh` script from the autoscale directory where you configured the new target cluster. This script is now included with the [HP Vertica AWS Auto Scaling](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) open source package.
+To clone your database, run the `copyCluster.sh` script from the autoscale directory where you configured the new target cluster. This script is now included with the [HP Vertica AWS Auto Scaling](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) open source package.
 
 You can rerun the `copyCluster.sh` script at any time to efficiently resynchronize your database - only the changed data files will be transferred. Be aware that the target database will be unavailable during the copy process, so if you are using it for production then you should schedule the copies during maintenance windows.
+
+## Under the Hood
 
 The `copyCluster.sh` script uses HP Vertica's [copycluster](http://my.vertica.com/docs/7.1.x/HTML/index.htm#Authoring/AdministratorsGuide/BackupRestore/CopyingTheDatabaseToAnotherCluster.htm?Highlight=copycluster) tool to transfer Vertica database files from the source cluster nodes to the target cluster nodes, using the rsync protocol. These files are highly compressed, and each time the tool is run it will incrementally copy only files that have been created since the previous time it was run, so the process is very efficient. 
 
