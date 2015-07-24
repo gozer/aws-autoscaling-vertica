@@ -8,7 +8,7 @@ You may want to clone your HP Vertica cluster to:
 
   By replicating your database to a "cluster in the cloud", you can establish a working backup database that you can use if disaster strikes your primary cluster. Once your backup cluster has been established, you can periodically (and incrementally) re-synchronize it with the primary cluster to keep it up to date. 
 
-  Save money by suspending the backup cluster when it is not in use, and resuming it again when needed. Use the `suspendCluster.sh` and `resumeCluster.sh` utilities provided with the HP Vertica AWS Auto Scaling open-source package. While the cluster is suspended, your AWS usage charges will be significantly reduced.
+  Save money by suspending the backup cluster when it is not in use, and resuming it again when needed. Use the `suspend_cluster.sh` and `resume_cluster.sh` utilities provided with the HP Vertica AWS Auto Scaling open-source package. While the cluster is suspended, your AWS usage charges will be significantly reduced.
 
 
 - **Create Sandbox Clusters**
@@ -20,7 +20,7 @@ You may want to clone your HP Vertica cluster to:
 
 - **Establish Regional Database Replicas**
 
-  You may want to load balance your application workload across duplicate clusters in multiple AWS regions. You can use the new `copyCluster.sh` script to establish your regional replicas, and to periodically resynchronize them with your master database during scheduled maintenance windows.  
+  You may want to load balance your application workload across duplicate clusters in multiple AWS regions. You can use the new `clone_local_to_cluster.sh` script to establish your regional replicas, and to periodically resynchronize them with your master database during scheduled maintenance windows.  
 
 
 - **Migrate from your on-premise datacenter to the cloud**
@@ -76,23 +76,23 @@ You are now ready to clone your local database to the new cluster.
 
 ## Task 2: Clone the Database
 
-To clone your database, run the `copyCluster.sh` script from the autoscale directory where you configured the new target cluster. This script is now included with the [HP Vertica AWS Auto Scaling](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) open source package.
+To clone your database, run the `clone_local_to_cluster.sh` script from the autoscale directory where you configured the new target cluster. This script is now included with the [HP Vertica AWS Auto Scaling](https://community.dev.hp.com/t5/Vertica-Blog/Automatic-Vertica-Scaling-and-Node-Replacement-on-AWS/ba-p/230468) open source package.
 
-You can rerun the `copyCluster.sh` script at any time to efficiently resynchronize your database - only the changed data files will be transferred. Be aware that the target database will be unavailable during the copy process, so if you are using it for production then you should schedule the copies during maintenance windows.
+You can rerun the `clone_local_to_cluster.sh` script at any time to efficiently resynchronize your database - only the changed data files will be transferred. Be aware that the target database will be unavailable during the copy process, so if you are using it for production then you should schedule the copies during maintenance windows.
 
 ## Under the Hood
 
-The `copyCluster.sh` script uses HP Vertica's [copycluster](http://my.vertica.com/docs/7.1.x/HTML/index.htm#Authoring/AdministratorsGuide/BackupRestore/CopyingTheDatabaseToAnotherCluster.htm?Highlight=copycluster) tool to transfer Vertica database files from the source cluster nodes to the target cluster nodes, using the rsync protocol. These files are highly compressed, and each time the tool is run it will incrementally copy only files that have been created since the previous time it was run, so the process is very efficient. 
+The `clone_local_to_cluster.sh` script uses HP Vertica's [copycluster](http://my.vertica.com/docs/7.1.x/HTML/index.htm#Authoring/AdministratorsGuide/BackupRestore/CopyingTheDatabaseToAnotherCluster.htm?Highlight=copycluster) tool to transfer Vertica database files from the source cluster nodes to the target cluster nodes, using the rsync protocol. These files are highly compressed, and each time the tool is run it will incrementally copy only files that have been created since the previous time it was run, so the process is very efficient. 
 
 Because the database catalog and data files are copied (unaltered) from the source to the target cluster, the target must align with the source in the following: 
 
-  1. Number of Nodes: The `copyCluster.sh` script will check that the number of nodes in source and destination clusters match. If they do not, the script will report an error and abort. You can resize the target cluster to the correct number of nodes by running the `scaleCluster.sh` script.
+  1. Number of Nodes: The `clone_local_to_cluster.sh` script will check that the number of nodes in source and destination clusters match. If they do not, the script will report an error and abort. You can resize the target cluster to the correct number of nodes by running the `scale_cluster.sh` script.
 
   2. Node names: If the node names used by the two clusters do not match, then the target cluster will be reconfigured and a new target database created to use the same node names as the source.
 
-  3. Database Name: If the database names for the active database on the two clusters do not match, the `copyCluster.sh` script will stop the target database and create a new empty database with the name and dbadmin password used by the source database.
+  3. Database Name: If the database names for the active database on the two clusters do not match, the `clone_local_to_cluster.sh` script will stop the target database and create a new empty database with the name and dbadmin password used by the source database.
 
-  4. File locations: If the data and catalog directory paths used on the source database do not exist on the target cluster nodes, they will be recreated as symbolic links to the `/vertica/data` directory (this is the default location used by the Vertica Amazon Machine Image). The target database will be automatically recreated to use the matching paths. The target nodes must have sufficient disk space for the copy to be successful - the copyCluster tool does not currently perform any disk space checks.
+  4. File locations: If the data and catalog directory paths used on the source database do not exist on the target cluster nodes, they will be recreated as symbolic links to the `/vertica/data` directory (this is the default location used by the Vertica Amazon Machine Image). The target database will be automatically recreated to use the matching paths. The target nodes must have sufficient disk space for the copy to be successful - the `clone_local_to_cluster.sh` tool does not currently perform any disk space checks.
 
 When the above items are aligned and verified, the target database is stopped, and the HP Vertica vbr.py copycluster tool is executed to copy all new data files from each source node to the corresponding target node.
 
@@ -102,7 +102,7 @@ Once the copy has completed, the target database settings are automatically conf
 
 Finally, the target database is started and configured with the settings required for auto scaling. And that's it! You now have a working copy of your database running (with auto scaling and node replacement features) in the AWS cloud. 
 
-*The HP Vertica AWS Auto Scale package (including the new copy cluster feature) is not a formally tested or supported HP Vertica product. Nevertheless, we hope you feel encouraged to experiment, see what works, and post your feedback and best practices back to the community.*
+*The HP Vertica AWS Auto Scale package (including the new clone_local_to_cluster.sh feature) is not a formally tested or supported HP Vertica product. Nevertheless, we hope you feel encouraged to experiment, see what works, and post your feedback and best practices back to the community.*
 
 -------------
 
