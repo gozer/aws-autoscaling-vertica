@@ -10,50 +10,22 @@ if [ ! -t 0 ]; then exec >> /var/log/launch.log 2>&1; fi
 echo Join new instances to Vertica DB cluster [`date`]
 echo ===========================================================
 
-# Configuration – copy from autoscaling_vars.sh
-aws_access_key_id=YOUR_ACCESS_KEY_ID
-aws_secret_access_key=YOUR_SECRET_ACCESS_KEY
-region=YOUR_REGION
-autoscaling_group_name=YOUR_AUTOSCALING_GROUP_NAME
-
-echo Install nmap and unzip
-yum install nmap -y
-yum install unzip -y
-
-echo Install and configure AWS CLI [`date`]
-cd /tmp
-curl https://s3.amazonaws.com/aws-cli/awscli-bundle.zip -o awscli-bundle.zip
-unzip -o awscli-bundle.zip
-./awscli-bundle/install -i /usr/local/aws -b /usr/local/bin/aws
-mkdir -p ~/.aws
-cat > ~/.aws/credentials <<EOF
-[default]
-aws_access_key_id = $aws_access_key_id
-aws_secret_access_key = $aws_secret_access_key
-EOF
-cat > ~/.aws/config <<EOF
-[default]
-output = table
-region = $region
-EOF
-chmod 600 ~/.aws/*
-cp -R ~/.aws ~dbadmin
-chown -R dbadmin.verticadba ~dbadmin/.aws
-chmod 600 ~dbadmin/.aws/*
-
 # get instance configuration
 resId=$(curl -s http://169.254.169.254/latest/meta-data/reservation-id); echo Reservation: $resId
 instId=$(curl -s http://169.254.169.254/latest/meta-data/instance-id); echo InstanceId: $instId
 privateIp=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4); echo PrivateIP: $privateIp
-publicIp=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4); echo PublicIP: $publicIp
+publicIp=$(curl -sf http://169.254.169.254/latest/meta-data/public-ipv4 || echo "0.0.0.0"); echo PublicIP: $publicIp
 macs=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/)
-subnetCIDR=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$macs/subnet-ipv4-cidr-block/); echo subnetCIDR: $subnetCIDR
+subnetCIDR=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$macs/vpc-ipv4-cidr-block/); echo subnetCIDR: $subnetCIDR
 mask=$(echo $subnetCIDR | cut -d"/" -f 2)
 eni=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$macs/interface-id)
 
+aws_region=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq '.region' -r)
+
+autoscaling_group_name=$(aws --region "$aws_region" autoscaling describe-auto-scaling-instances  --instance "$instId" --query 'AutoScalingInstances[0].AutoScalingGroupName' --output text)
 
 echo Get all nodes in autoscaling group [`date`]
-groupNodes=$(aws --output=text ec2 describe-instances --filters Name=tag-key,Values=Name,Name=tag-value,Values=$autoscaling_group_name --query "Reservations[*].Instances[*].PrivateIpAddress")
+groupNodes=$(aws --region "$aws_region" --output=text ec2 describe-instances --filters "Name=tag-key,Values=Name,Name=tag-value,Values=$autoscaling_group_name" --query "Reservations[*].Instances[*].PrivateIpAddress")
 
 echo Find first node in group [$groupNodes] accepting DB connections [`date`]
 connectTo=""
@@ -80,7 +52,7 @@ vsql -U dbadmin -h $connectTo -c "UPDATE autoscale.launches SET replace_node_add
 downNode=$(vsql -qAt -U dbadmin -h $connectTo -c "SELECT replace_node_address FROM autoscale.launches WHERE ec2_instanceid='$instId'")
 if [ ! -z "$downNode" ]; then
    echo "Adopting Private IP Address of DOWN node [$downNode]. Original Private IP Address [$privateIp]"
-   aws ec2 assign-private-ip-addresses --network-interface $eni --private-ip-addresses $downNode
+   aws --region "$aws_region" ec2 assign-private-ip-addresses --network-interface $eni --private-ip-addresses $downNode
    cmd="ip address add $downNode/$mask brd + dev eth0"
    echo $cmd >> /etc/rc.local
    $cmd
@@ -97,7 +69,7 @@ fi
 
 
 echo Retrieve instanceIds for current reservationId: $resId [`date`]
-resInstances=$(aws --output=text ec2 describe-instances --filters "Name=reservation-id,Values=$resId" --query "Reservations[*].Instances[*].InstanceId")
+resInstances=$(aws --region="$aws_region" --output=text ec2 describe-instances --filters "Name=reservation-id,Values=$resId" --query "Reservations[*].Instances[*].InstanceId")
 
 echo Wait until all nodes [$resInstances] in our reservation have initialized [`date`]
 for instance in $resInstances; do

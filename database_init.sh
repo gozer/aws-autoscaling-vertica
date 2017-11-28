@@ -9,12 +9,11 @@
 resId=$(curl -s http://169.254.169.254/latest/meta-data/reservation-id); echo Reservation: $resId
 instId=$(curl -s http://169.254.169.254/latest/meta-data/instance-id); echo InstanceId: $instId
 privateIp=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4); echo PrivateIP: $privateIp
-publicIp=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4); echo PublicIP: $publicIp
+publicIp=$(curl -fs http://169.254.169.254/latest/meta-data/public-ipv4 || echo "0.0.0.0"); echo PublicIP: $publicIp
 macs=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/) 
-subnetCIDR=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$macs/subnet-ipv4-cidr-block/); echo Subnet CIDR: $subnetCIDR
 
 # create database
-admintools -t create_db -s $privateIp -d $database_name -p $password
+admintools -t create_db -s $privateIp -d $database_name -p $password --skip-fs-checks
 
 # configure database for autoscaling
 ./database_configure.sh

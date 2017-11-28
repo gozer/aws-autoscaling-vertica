@@ -82,7 +82,7 @@ if [ ! -z "$new_nodes" ]; then
    DB=$(admintools -t show_active_db)
    echo add nodes [$new_nodes] to active DB [$DB] [`date`]
    vsql -c "UPDATE autoscale.launches SET status='ADD TO DATABASE' WHERE is_running AND replace_node_address IS NULL; COMMIT" > /dev/null
-   admintools -t db_add_node -s $new_nodes -i -d $DB
+   admintools -t db_add_node -s $new_nodes -i -d $DB --skip-fs-checks
    echo rebalance cluster [`date`]
    admintools -t rebalance_data -d $DB -k $k_safety
 fi
@@ -122,8 +122,8 @@ do
 done
 
 echo configure external stored procedures on new nodes [`date`]
-admintools -t install_procedure -d VMart -f $autoscaleDir/add_nodes.sh
-admintools -t install_procedure -d VMart -f $autoscaleDir/remove_nodes.sh
+admintools -t install_procedure -d $database_name -f $autoscaleDir/add_nodes.sh
+admintools -t install_procedure -d $database_name -f $autoscaleDir/remove_nodes.sh
 
 echo check if nodes are successfully added and update status in 'launches' [`date`]
 end_time=$(date +"%Y-%m-%d %H:%M:%S")
