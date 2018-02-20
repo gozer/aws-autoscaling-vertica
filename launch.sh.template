@@ -24,10 +24,21 @@ aws_region=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/doc
 
 autoscaling_group_name=$(aws --region "$aws_region" autoscaling describe-auto-scaling-instances  --instance "$instId" --query 'AutoScalingInstances[0].AutoScalingGroupName' --output text)
 
-echo Get all nodes in autoscaling group [`date`]
-groupNodes=$(aws --region "$aws_region" --output=text ec2 describe-instances --filters "Name=tag-key,Values=Name,Name=tag-value,Values=$autoscaling_group_name" --query "Reservations[*].Instances[*].PrivateIpAddress")
+# Nubis discovery time
+NUBIS_ARENA=$(nubis-metadata NUBIS_ARENA)
+NUBIS_ENVIRONMENT=$(nubis-metadata NUBIS_ENVIRONMENT)
+NUBIS_PROJECT=$(nubis-metadata NUBIS_PROJECT)
+NUBIS_PURPOSE=$(nubis-metadata NUBIS_PURPOSE)
 
-echo Find first node in group [$groupNodes] accepting DB connections [`date`]
+autoscaling_group_names=$(aws --region "$aws_region" autoscaling describe-auto-scaling-groups --query  "AutoScalingGroups[?contains(Tags[?Key==\`ServiceName\`].Value, \`$NUBIS_PROJECT\`)]|[?contains(Tags[?Key==\`Environment\`].Value, \`$NUBIS_ENVIRONMENT\`)]|[?contains(Tags[?Key==\`Arena\`].Value, \`$NUBIS_ARENA\`)]|[?contains(Tags[?Key==\`Purpose\`].Value, \`$NUBIS_PURPOSE\`)].[AutoScalingGroupName]"  | jq -r .[][])
+
+groupNodes=""
+echo $autoscaling_group_names | while read asg; do
+  echo Get all nodes in autoscaling groups '$asg' [`date`]
+  groupNodes="$groupNodes $(aws --region "$aws_region" --output=text ec2 describe-instances --filters "Name=tag-key,Values=Name,Name=tag-value,Values=$asg" --query "Reservations[*].Instances[*].PrivateIpAddress")"
+done
+
+# Could also try our ELB while we are at it, maybe?
 connectTo=""
 
 # keep trying for a while
