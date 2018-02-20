@@ -32,20 +32,27 @@ NUBIS_PURPOSE=$(nubis-metadata NUBIS_PURPOSE)
 
 autoscaling_group_names=$(aws --region "$aws_region" autoscaling describe-auto-scaling-groups --query  "AutoScalingGroups[?contains(Tags[?Key==\`ServiceName\`].Value, \`$NUBIS_PROJECT\`)]|[?contains(Tags[?Key==\`Environment\`].Value, \`$NUBIS_ENVIRONMENT\`)]|[?contains(Tags[?Key==\`Arena\`].Value, \`$NUBIS_ARENA\`)]|[?contains(Tags[?Key==\`Purpose\`].Value, \`$NUBIS_PURPOSE\`)].[AutoScalingGroupName]"  | jq -r .[][])
 
-groupNodes=""
+NODES_FILE=$(mktemp)
+
 echo $autoscaling_group_names | while read asg; do
   echo Get all nodes in autoscaling groups '$asg' [`date`]
-  groupNodes="$groupNodes $(aws --region "$aws_region" --output=text ec2 describe-instances --filters "Name=tag-key,Values=Name,Name=tag-value,Values=$asg" --query "Reservations[*].Instances[*].PrivateIpAddress")"
+  CUR_NODES=$(aws --region "$aws_region" --output=text ec2 describe-instances --filters "Name=tag-key,Values=Name,Name=tag-value,Values=$asg" --query "Reservations[*].Instances[*].PrivateIpAddress" | xargs -r  echo)
+  NODES="$NODES $CUR_NODES"
+  echo $NODES > $NODES_FILE
 done
 
 # Could also try our ELB while we are at it, maybe?
 connectTo=""
 
+NODES=$(cat $NODES_FILE | sort | uniq)
+
+rm -f $NODES_FILE
+
 # keep trying for a while
 retry=10
 while [ "$retry" -ge "0" ];
 do
-  for node in $groupNodes
+  for node in $NODES
   do
     echo "[$retry] Trying vsql connection to $node"
     vsql -U dbadmin -h $node -c "select 1" > /dev/null
