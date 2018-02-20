@@ -29,18 +29,33 @@ groupNodes=$(aws --region "$aws_region" --output=text ec2 describe-instances --f
 
 echo Find first node in group [$groupNodes] accepting DB connections [`date`]
 connectTo=""
-for node in $groupNodes
+
+# keep trying for a while
+retry=10
+while [ "$retry" -ge "0" ];
 do
-   echo Trying vsql connection to $node
-   vsql -U dbadmin -h $node -c "select 1" > /dev/null
-   if [ $? -eq 0 ]; then
-      echo Connection succeeded.
-      connectTo=$node
-      break
-   else
-      echo Connection failed.
-   fi
+  for node in $groupNodes
+  do
+    echo "[$retry] Trying vsql connection to $node"
+    vsql -U dbadmin -h $node -c "select 1" > /dev/null
+    if [ $? -eq 0 ]; then
+       echo Connection succeeded.
+       connectTo=$node
+       break
+    else
+       echo Connection failed.
+    fi
+  done
+
+  ((retry--))
+
+  if [ -n "$connectTo" ]; then
+    break
+  else
+    sleep 10
+  fi
 done
+
 [ -z $connectTo ] && { echo No nodes in autoscaling group responded to DB connection request. Exiting.; exit 1; }
 
 echo "Log initial entry to 'launches' table"
