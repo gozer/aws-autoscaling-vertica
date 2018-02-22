@@ -34,8 +34,8 @@ autoscaling_group_names=$(aws --region "$aws_region" autoscaling describe-auto-s
 
 NODES_FILE=$(mktemp)
 
-echo $autoscaling_group_names | while read asg; do
-  echo Get all nodes in autoscaling groups '$asg' [`date`]
+echo "$autoscaling_group_names" | while read asg; do
+  echo "Get all nodes in autoscaling groups '$asg' [$(date)]"
   CUR_NODES=$(aws --region "$aws_region" --output=text ec2 describe-instances --filters "Name=tag-key,Values=Name,Name=tag-value,Values=$asg" --query "Reservations[*].Instances[*].PrivateIpAddress" | xargs -r  echo)
   NODES="$NODES $CUR_NODES"
   echo $NODES > $NODES_FILE
