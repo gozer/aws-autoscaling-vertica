@@ -16,7 +16,8 @@ instId=$(curl -s http://169.254.169.254/latest/meta-data/instance-id); echo Inst
 privateIp=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4); echo PrivateIP: $privateIp
 publicIp=$(curl -sf http://169.254.169.254/latest/meta-data/public-ipv4 || echo "0.0.0.0"); echo PublicIP: $publicIp
 macs=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/)
-subnetCIDR=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$macs/vpc-ipv4-cidr-block/); echo subnetCIDR: $subnetCIDR
+subnetCIDR=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$macs/subnet-ipv4-cidr-block/); echo subnetCIDR: $subnetCIDR
+
 mask=$(echo $subnetCIDR | cut -d"/" -f 2)
 eni=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/macs/$macs/interface-id)
 
@@ -77,11 +78,12 @@ done
 [ -z $connectTo ] && { echo No nodes in autoscaling group responded to DB connection request. Exiting.; exit 1; }
 
 echo "Log initial entry to 'launches' table"
-echo "$resId|$instId|$privateIp|$publicIp|INITIALIZING|1" | vsql -U dbadmin -h $connectTo -c "COPY autoscale.launches (reservationid, ec2_instanceid, node_address, node_public_address, status, is_running) FROM STDIN"
+echo "$resId|$instId|$privateIp|$subnetCIDR|$publicIp|INITIALIZING|1" | vsql -U dbadmin -h $connectTo -c "COPY autoscale.launches (reservationid, ec2_instanceid, node_address, node_subnet_cidr, node_public_address, status, is_running) FROM STDIN"
 
 echo "Check if there are any DOWN nodes."
 # If there is a DOWN node, we will automatically take its place by adopting its private IP address (if another launching instance hasn't got it first!).
-vsql -U dbadmin -h $connectTo -c "UPDATE autoscale.launches SET replace_node_address = (SELECT node_address FROM nodes WHERE node_state='DOWN' EXCEPT SELECT node_address FROM autoscale.launches WHERE is_running LIMIT 1) WHERE ec2_instanceid='$instId'; COMMIT;"
+vsql -U dbadmin -h $connectTo -c "UPDATE autoscale.launches SET replace_node_address = (SELECT node_address FROM nodes WHERE node_state='DOWN' AND node_subnet_cidr='$subnetCIDR' EXCEPT SELECT node_address FROM autoscale.launches WHERE is_running LIMIT 1) WHERE ec2_instanceid='$instId'; COMMIT;"
+
 downNode=$(vsql -qAt -U dbadmin -h $connectTo -c "SELECT replace_node_address FROM autoscale.launches WHERE ec2_instanceid='$instId'")
 if [ ! -z "$downNode" ]; then
    echo "Adopting Private IP Address of DOWN node [$downNode]. Original Private IP Address [$privateIp]"
@@ -99,7 +101,6 @@ if [ ! -z "$downNode" ]; then
    echo -e "NETWORKING=yes\nHOSTNAME=$new_hostname.localdomain" > /etc/sysconfig/network
    echo "$downNode $new_hostname" >> /etc/hosts
 fi
-
 
 echo Retrieve instanceIds for current reservationId: $resId [`date`]
 resInstances=$(aws --region="$aws_region" --output=text ec2 describe-instances --filters "Name=reservation-id,Values=$resId" --query "Reservations[*].Instances[*].InstanceId")
