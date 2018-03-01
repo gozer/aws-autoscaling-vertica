@@ -15,9 +15,6 @@ echo read_scaledown_queue.sh: [`date`]
 # Get this node's IP
 myIp=$(hostname -I | awk '{print $NF}')
 
-# Get URL for ScaleDown SQS queue
-scaleDown_url=$( aws --output=text sqs list-queues | grep "${autoscaling_group_name}_ScaleDown" | awk '{print $2}') 
-
 # Read and parse all pending messages, one at a time
 i=0
 while [ 1 ]; do
