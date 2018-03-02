@@ -84,6 +84,7 @@ if [ ! -z "$new_nodes" ]; then
    vsql -c "UPDATE autoscale.launches SET status='ADD TO DATABASE' WHERE is_running AND replace_node_address IS NULL; COMMIT" > /dev/null
    admintools -t db_add_node -s $new_nodes -i -d $DB --skip-fs-checks
    echo rebalance cluster [`date`]
+   vsql -c "SELECT REBALANCE_CLUSTER();" > /dev/null
    admintools -t rebalance_data -d $DB -k $k_safety
 fi
 
