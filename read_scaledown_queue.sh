@@ -2,6 +2,8 @@
 # Copyright (c) 2011-2015 by Vertica, an HP Company.  All rights reserved.
 # Run from cron schedule - checks for lifecycle hook termination messages on the SQS queue, and initiates cluster scaledown
 
+set -x
+
 . /home/dbadmin/.bashrc
 PATH=/usr/local/bin:/opt/vertica/bin:${PATH}
 autoscaleDir=/home/dbadmin/autoscale
@@ -29,6 +31,7 @@ while [ 1 ]; do
       echo "ScaleDown SQS Message Received - $msgBody"
       lifecycleTransition=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["LifecycleTransition"]')
       lifecycleActionToken=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["LifecycleActionToken"]')
+      autoscalingGroupName=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["AutoScalingGroupName"]')
       eC2InstanceId=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["EC2InstanceId"]')
       privateIps=$(aws --output=text ec2 describe-instances --instance-id $eC2InstanceId --query "Reservations[*].Instances[*].NetworkInterfaces[*].PrivateIpAddresses[*].PrivateIpAddress" | perl -ne "chomp; print join(',', map { qq/'\$_'/ } reverse split(/\s+/,$_))")
       if [ ! -z "$privateIps" ]; then
@@ -37,7 +40,7 @@ while [ 1 ]; do
          privateIp=$(vsql -qAt -c "select node_address from nodes where node_address in ($privateIps)")
          node_name=$(vsql -qAt -c "select node_name from nodes where node_address in ($privateIps)")
          # Add each terminating instance to the autoscale.terminations table
-         echo "$myIp|$time|$eC2InstanceId|$privateIp|$publicIp|$lifecycleActionToken|COLLATING INSTANCES|1" | vsql -c "COPY autoscale.terminations (queued_by_node, start_time, ec2_instanceid, node_address, node_public_address, lifecycle_action_token, status, is_running) FROM STDIN" 
+         echo "$myIp|$time|$eC2InstanceId|$privateIp|$publicIp|$lifecycleActionToken|$autoscalingGroupName|COLLATING INSTANCES|1" | vsql -c "COPY autoscale.terminations (queued_by_node, start_time, ec2_instanceid, node_address, node_public_address, lifecycle_action_token, lifecycle_action_asg, status, is_running) FROM STDIN" 
          if [ $? -ne 0 ]; then 
             echo Unable to add to autoscale.terminations - exiting without deleting message
             exit 1
@@ -53,6 +56,7 @@ while [ 1 ]; do
    aws sqs delete-message --queue-url $scaleDown_url --receipt-handle $msgHandle
    echo "Message deleted from SQS queue"
 done
+
 numMessages=$i
 if [ $numMessages -eq 0 ]; then
    # echo "No pending ScaleDown messages - exiting"

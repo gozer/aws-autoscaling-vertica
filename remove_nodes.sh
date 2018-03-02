@@ -6,6 +6,8 @@
 autoscaleDir=/home/dbadmin/autoscale
 . $autoscaleDir/autoscaling_vars.sh
 
+set -x
+
 # in non terminal mode, redirect stdout and stderr to logfile
 if [ ! -t 0 ]; then exec >> $autoscaleDir/remove_nodes.log 2>&1; fi
 echo -e "\n\nremove_nodes: [`date`]\n=======================================\n"
@@ -31,7 +33,7 @@ myIp=$(hostname -I | awk '{print $NF}'); echo My IP: $myIp
 echo retrieve details for instances queued for termination, and update their status [`date`]
 nodes=$(vsql -qAt -c "select node_address from autoscale.terminations where is_running" | paste -d, -s); 
 instances=$(vsql -qAt -c "select ec2_instanceid from autoscale.terminations where is_running" | paste -d, -s); 
-tokens=$(vsql -qAt -c "select lifecycle_action_token from autoscale.terminations where is_running");
+tokens=$(vsql -qAt -c "select lifecycle_action_token || ':' || lifecycle_action_asg from autoscale.terminations where is_running");
 vsql -c "UPDATE autoscale.terminations SET removed_by_node = '$myIp', status = 'REMOVING' where is_running; COMMIT" ;
 
 # If there are any DOWN nodes, no point continuing since database cannot be modified.
@@ -73,7 +75,9 @@ while [ 1 ]; do
       echo "Sending record-lifecycle-action-heartbeat for each terminating instance"
       for token in $tokens
       do
-         aws autoscaling record-lifecycle-action-heartbeat --lifecycle-action-token $token --lifecycle-hook-name ${autoscaling_group_name}_ScaleDown --auto-scaling-group-name ${autoscaling_group_name} 
+         action_token=$(echo $token | cut -d: -f1)
+	 asg=$(echo $token | cut -d: -f2)
+         aws autoscaling record-lifecycle-action-heartbeat --lifecycle-action-token "$action_token" --lifecycle-hook-name $lifecycle_hook_name --auto-scaling-group-name "$asg" 
       done
    fi
 done
@@ -86,7 +90,9 @@ sudo /opt/vertica/sbin/install_vertica --remove-hosts $nodes --point-to-point --
 echo Instruct AWS to proceed with instance termination by completing lifecycle actions [`date`]
 for token in $tokens
 do
-   aws autoscaling complete-lifecycle-action --lifecycle-action-token $token --lifecycle-hook-name ${autoscaling_group_name}_ScaleDown --auto-scaling-group-name ${autoscaling_group_name} --lifecycle-action-result CONTINUE
+   action_token=$(echo $token | cut -d: -f1)
+   asg=$(echo $token | cut -d: -f2)
+   aws autoscaling complete-lifecycle-action --lifecycle-action-token $action_token --lifecycle-hook-name $lifecycle_hook_name --auto-scaling-group-name "$asg" --lifecycle-action-result CONTINUE
 done
 
 echo Check if nodes are successfully removed and update status in 'terminations' [`date`]

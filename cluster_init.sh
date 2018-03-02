@@ -17,9 +17,6 @@ done
 
 AWS_REGION=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq '.region' -r)
 INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-ASG_NAME=$(aws autoscaling describe-auto-scaling-instances --region "$AWS_REGION" --instance "$INSTANCE_ID" --query 'AutoScalingInstances[0].AutoScalingGroupName' --output text)
-
-privateIp=$(aws --output=text ec2 describe-instances --filters Name=tag-key,Values=Name,Name=tag-value,Values=$autoscaling_group_name --query "Reservations[*].Instances[*].PrivateIpAddress"); echo PrivateIP: $privateIp
 
 if [ "$privateIp" == "" ]; then
   privateIp=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4); echo PrivateIP: $privateIp
