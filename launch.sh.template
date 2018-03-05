@@ -6,6 +6,8 @@ PATH=/usr/local/bin:/opt/vertica/bin:${PATH}
 # in non terminal mode, redirect stdout and stderr to logfile
 if [ ! -t 0 ]; then exec >> /var/log/launch.log 2>&1; fi
 
+set -x
+
 echo Join new instances to Vertica DB cluster [`date`]
 echo ===========================================================
 
@@ -79,7 +81,8 @@ done
 echo "Log initial entry to 'launches' table"
 echo "$resId|$instId|$privateIp|$subnetCIDR|$publicIp|INITIALIZING|1" | vsql -U dbadmin -h $connectTo -c "COPY autoscale.launches (reservationid, ec2_instanceid, node_address, node_subnet_cidr, node_public_address, status, is_running) FROM STDIN"
 
-echo "Check if there are any DOWN nodes."
+
+echo "Check if there are any DOWN nodes in our subnet."
 # If there is a DOWN node, we will automatically take its place by adopting its private IP address (if another launching instance hasn't got it first!).
 vsql -U dbadmin -h $connectTo -c "UPDATE autoscale.launches SET replace_node_address = (SELECT node_address FROM nodes WHERE node_state='DOWN' AND node_subnet_cidr='$subnetCIDR' EXCEPT SELECT node_address FROM autoscale.launches WHERE is_running LIMIT 1) WHERE ec2_instanceid='$instId'; COMMIT;"
 
