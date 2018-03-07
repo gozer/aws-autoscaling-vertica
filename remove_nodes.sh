@@ -71,12 +71,15 @@ while [ 1 ]; do
    if [ $((c%5)) -eq 0 ]; then
       echo "db_remove_node still running [`date`]"
       echo "Sending record-lifecycle-action-heartbeat for each terminating instance"
+      OLDIFS=$IFS
+      IFS=$'\n'
       for token in $tokens
       do
          action_token=$(echo $token | cut -d: -f1)
 	 asg=$(echo $token | cut -d: -f2)
-         aws autoscaling record-lifecycle-action-heartbeat --lifecycle-action-token "$action_token" --lifecycle-hook-name $lifecycle_hook_name --auto-scaling-group-name "$asg" 
+         aws autoscaling record-lifecycle-action-heartbeat --lifecycle-action-token "$action_token" --lifecycle-hook-name "$lifecycle_hook_name" --auto-scaling-group-name "$asg" 
       done
+      IFS=$OLDIFS
    fi
 done
 echo Done removing nodes [$nodes] from active DB [$DB] [`date`]
@@ -86,12 +89,15 @@ echo remove nodes [$nodes] from cluster [`date`]
 sudo /opt/vertica/sbin/install_vertica --remove-hosts $nodes --point-to-point --dba-user-password-disabled --ssh-identity $autoscaleDir/key.pem --failure-threshold HALT
 
 echo Instruct AWS to proceed with instance termination by completing lifecycle actions [`date`]
+OLDIFS=$IFS
+IFS=$'\n'
 for token in $tokens
 do
    action_token=$(echo $token | cut -d: -f1)
    asg=$(echo $token | cut -d: -f2)
-   aws autoscaling complete-lifecycle-action --lifecycle-action-token $action_token --lifecycle-hook-name $lifecycle_hook_name --auto-scaling-group-name "$asg" --lifecycle-action-result CONTINUE
+   aws autoscaling complete-lifecycle-action --lifecycle-action-token "$action_token" --lifecycle-hook-name "$lifecycle_hook_name" --auto-scaling-group-name "$asg" --lifecycle-action-result CONTINUE
 done
+IFS=$OLDIFS
 
 echo Check if nodes are successfully removed and update status in 'terminations' [`date`]
 end_time=$(date +"%Y-%m-%d %H:%M:%S")
