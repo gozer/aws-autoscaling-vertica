@@ -6,8 +6,6 @@
 autoscaleDir=/home/dbadmin/autoscale
 . $autoscaleDir/autoscaling_vars.sh
 
-set -x
-
 # in non terminal mode, redirect stdout and stderr to logfile
 if [ ! -t 0 ]; then exec >> $autoscaleDir/remove_nodes.log 2>&1; fi
 echo -e "\n\nremove_nodes: [`date`]\n=======================================\n"

@@ -6,8 +6,6 @@ PATH=/usr/local/bin:/opt/vertica/bin:${PATH}
 # in non terminal mode, redirect stdout and stderr to logfile
 if [ ! -t 0 ]; then exec >> /var/log/launch.log 2>&1; fi
 
-set -x
-
 echo Join new instances to Vertica DB cluster [`date`]
 echo ===========================================================
 

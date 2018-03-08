@@ -2,8 +2,6 @@
 # Copyright (c) 2011-2015 by Vertica, an HP Company.  All rights reserved.
 # Run from cron schedule - checks for lifecycle hook termination messages on the SQS queue, and initiates cluster scaledown
 
-set -x
-
 . /home/dbadmin/.bashrc
 PATH=/usr/local/bin:/opt/vertica/bin:${PATH}
 autoscaleDir=/home/dbadmin/autoscale
