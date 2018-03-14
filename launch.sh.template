@@ -91,10 +91,17 @@ if [ ! -z "$downNode" ]; then
    cmd="ip address add $downNode/$mask brd + dev eth0"
    echo $cmd >> /etc/rc.local
    $cmd
-   echo "Modify default route to use new IP address as the src"
+   echo "Modify default subnet route to use new IP address as the src"
    cmd="ip route delete $subnetCIDR; ip route add $subnetCIDR dev eth0 src $downNode"
    echo $cmd >> /etc/rc.local
    $cmd
+
+   GW=$(ip route show default | awk '/default/ {print $3}')
+   echo "Modify default route to use new IP address as the src"
+   cmd="ip route replace default via $GW src $downNode"
+   echo $cmd >> /etc/rc.local
+   $cmd
+
    echo "Change hostname to use new IP"
    new_hostname=`echo "ip-$downNode" | sed -e 's/\./-/g'`
    hostname $new_hostname
