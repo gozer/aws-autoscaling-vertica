@@ -27,6 +27,9 @@ vsql -c "CREATE PROCEDURE autoscale.remove_nodes() AS 'remove_nodes.sh' LANGUAGE
 vsql -c " SELECT ENABLE_ELASTIC_CLUSTER();"
 vsql -c " SELECT ENABLE_LOCAL_SEGMENTS();"
 
+# Disable connection warnings from load-balancers
+vsql -c " SELECT set_config_parameter('WarnOnIncompleteStartupPacket', 0);"
+
 # Create logging tables - 
 vsql -c "CREATE TABLE autoscale.launches (added_by_node varchar(15), start_time timestamp, end_time timestamp, duration_s int, reservationid varchar(20), ec2_instanceid varchar(20), node_address varchar(15), node_subnet_cidr varchar(25), replace_node_address varchar(15), node_public_address varchar(15), status varchar(40), is_running boolean, comment varchar(128)) ORDER BY start_time UNSEGMENTED ALL NODES";
 vsql -c "CREATE TABLE autoscale.terminations (queued_by_node varchar(15), removed_by_node varchar(15), start_time timestamp, end_time timestamp, duration_s int, ec2_instanceid varchar(20), node_address varchar(15), node_subnet_cidr varchar(25), node_public_address varchar(15), lifecycle_action_token varchar(128), lifecycle_action_asg varchar(128), status varchar(128), is_running boolean) ORDER BY start_time UNSEGMENTED ALL NODES";
