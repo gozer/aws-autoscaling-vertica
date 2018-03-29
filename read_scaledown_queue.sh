@@ -25,7 +25,7 @@ while [ 1 ]; do
    msgBody=$(echo "$msg" | python -c 'import sys, json; print json.load(sys.stdin)["Messages"][0]["Body"]')
    msgHandle=$(echo "$msg" | python -c 'import sys, json; print json.load(sys.stdin)["Messages"][0]["ReceiptHandle"]')
    lifecycleTransition=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["LifecycleTransition"]')
-   if [ "$lifecycleTransition" -eq "autoscaling:EC2_INSTANCE_TERMINATING" ] ; then
+   if [ "$lifecycleTransition" == "autoscaling:EC2_INSTANCE_TERMINATING" ] ; then
       echo "ScaleDown SQS Message Received - $msgBody"
       lifecycleActionToken=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["LifecycleActionToken"]')
       autoscalingGroupName=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["AutoScalingGroupName"]')
