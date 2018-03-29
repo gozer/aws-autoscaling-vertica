@@ -9,8 +9,7 @@ autoscaleDir=/home/dbadmin/autoscale
 time=$( date +"%Y-%m-%d %H:%M:%S")
 
 # in non terminal mode, redirect stdout and stderr to logfile
-if [ ! -t 0 ]; then exec >> $autoscaleDir/read_scaledown_queue.log 2>&1; fi
-echo read_scaledown_queue.sh: [`date`]
+if [ ! -t 0 ]; then exec &> >(ts > $autoscaleDir/read_scaledown_queue.log) 2>&1; fi
 
 # Get this node's IP
 myIp=$(hostname -I | awk '{print $NF}')
@@ -24,8 +23,8 @@ while [ 1 ]; do
    [ -z "$msg" ] && break  # no more messages waiting
    msgBody=$(echo "$msg" | python -c 'import sys, json; print json.load(sys.stdin)["Messages"][0]["Body"]')
    msgHandle=$(echo "$msg" | python -c 'import sys, json; print json.load(sys.stdin)["Messages"][0]["ReceiptHandle"]')
-   lifecycleTransition=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["LifecycleTransition"]')
-   if [ "$lifecycleTransition" == "autoscaling:EC2_INSTANCE_TERMINATING" ] ; then
+   event=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["Event"]')
+   if [ "$event" == "autoscaling:EC2_INSTANCE_TERMINATING" ] ; then
       echo "ScaleDown SQS Message Received - $msgBody"
       lifecycleActionToken=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["LifecycleActionToken"]')
       autoscalingGroupName=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["AutoScalingGroupName"]')
