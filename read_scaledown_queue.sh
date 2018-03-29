@@ -24,10 +24,9 @@ while [ 1 ]; do
    [ -z "$msg" ] && break  # no more messages waiting
    msgBody=$(echo "$msg" | python -c 'import sys, json; print json.load(sys.stdin)["Messages"][0]["Body"]')
    msgHandle=$(echo "$msg" | python -c 'import sys, json; print json.load(sys.stdin)["Messages"][0]["ReceiptHandle"]')
-   echo $msgBody | grep "TEST_NOTIFICATION" > /dev/null
-   if [ ! $? -eq 0 ]; then
+   lifecycleTransition=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["LifecycleTransition"]')
+   if [ "$lifecycleTransition" -eq "autoscaling:EC2_INSTANCE_TERMINATING" ] ; then
       echo "ScaleDown SQS Message Received - $msgBody"
-      lifecycleTransition=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["LifecycleTransition"]')
       lifecycleActionToken=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["LifecycleActionToken"]')
       autoscalingGroupName=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["AutoScalingGroupName"]')
       eC2InstanceId=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["EC2InstanceId"]')
@@ -49,7 +48,7 @@ while [ 1 ]; do
          echo "No Private IP found for [$eC2InstanceId] in autoscale.launches. Perhaps a rogue (old) message? Skipping"
       fi
    else
-      echo "Skipping unimportant message: autoscaling:TEST_NOTIFICATION => $msgBody"
+      echo "Skipping unimportant message: $lifecycleTransition => $msgBody"
    fi
    aws sqs delete-message --queue-url $scaleDown_url --receipt-handle $msgHandle
    echo "Message deleted from SQS queue"
