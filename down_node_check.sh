@@ -16,7 +16,7 @@ function get_instance_by_ip() {
 }
 
 # in non terminal mode, redirect stdout and stderr to logfile
-if [ ! -t 0 ]; then exec &> >(ts > $autoscaleDir/down_node_check.log) 2>&1; fi
+if [ ! -t 0 ]; then exec &> >(ts >> $autoscaleDir/down_node_check.log) 2>&1; fi
 
 myIp=$(hostname -I | awk '{print $NF}')
 

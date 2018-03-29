@@ -9,7 +9,7 @@ autoscaleDir=/home/dbadmin/autoscale
 time=$( date +"%Y-%m-%d %H:%M:%S")
 
 # in non terminal mode, redirect stdout and stderr to logfile
-if [ ! -t 0 ]; then exec &> >(ts > $autoscaleDir/read_scaledown_queue.log) 2>&1; fi
+if [ ! -t 0 ]; then exec &> >(ts >> $autoscaleDir/read_scaledown_queue.log) 2>&1; fi
 
 # Get this node's IP
 myIp=$(hostname -I | awk '{print $NF}')
