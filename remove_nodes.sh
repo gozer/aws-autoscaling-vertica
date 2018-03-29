@@ -57,6 +57,34 @@ fi
 # This step does a rebalance - could take a while, so we'll run it as a background job
 # monitor progress, and extend termination lifecycle heartbeat timer periodically to ensure
 # instance doesn't terminate before rebalancing is done.
+# Can't do this if a rebalance is in progress (i.e. during instance add operations)
+
+c=1
+while [ 1 ]; do
+   REBALANCING=$(vsql -qAt -c "SELECT count(1) FROM REBALANCE_OPERATIONS where is_latest=true and operation_status != 'COMPLETE'")
+
+   # Not in progress, safe to proceed
+   [ "$REBALANCING" == "0" ] && break
+
+   sleep 60
+
+   ((c=c+1))
+   # every 5 minutes, send a lifecycle heartbeat to AWS for all terminating instances
+   if [ $((c%5)) -eq 0 ]; then
+      echo "rebalancing still in progress [`date`]"
+      echo "Sending record-lifecycle-action-heartbeat for each terminating instance"
+      OLDIFS=$IFS
+      IFS=$'\n'
+      for token in $tokens
+      do
+         action_token=$(echo $token | cut -d: -f1)
+	 asg=$(echo $token | cut -d: -f2)
+         aws autoscaling record-lifecycle-action-heartbeat --lifecycle-action-token "$action_token" --lifecycle-hook-name "$lifecycle_hook_name" --auto-scaling-group-name "$asg" 
+      done
+      IFS=$OLDIFS
+   fi
+done
+
 DB=$(admintools -t show_active_db)
 echo remove nodes [$nodes] from active DB [$DB] [`date`]
 admintools -t db_remove_node -s $nodes -i -d $DB &
@@ -84,6 +112,8 @@ while [ 1 ]; do
 done
 echo Done removing nodes [$nodes] from active DB [$DB] [`date`]
 
+#XXX: Don't actually know if db_remove_node succeeded
+#XXX: wait %1 would give it to us and we could/should retry
 
 echo remove nodes [$nodes] from cluster [`date`]
 sudo /opt/vertica/sbin/install_vertica --remove-hosts $nodes --point-to-point --dba-user-password-disabled --ssh-identity $autoscaleDir/key.pem --failure-threshold HALT
