@@ -23,7 +23,7 @@ while [ 1 ]; do
    [ -z "$msg" ] && break  # no more messages waiting
    msgBody=$(echo "$msg" | python -c 'import sys, json; print json.load(sys.stdin)["Messages"][0]["Body"]')
    msgHandle=$(echo "$msg" | python -c 'import sys, json; print json.load(sys.stdin)["Messages"][0]["ReceiptHandle"]')
-   lifecycleTransition=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["LifecycleActionToken"]')
+   lifecycleTransition=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["LifecycleTransition"]')
    if [ "$lifecycleTransition" == "autoscaling:EC2_INSTANCE_TERMINATING" ] ; then
       echo "ScaleDown SQS Message Received - $msgBody"
       lifecycleActionToken=$(echo "$msgBody" | python -c 'import sys, json; print json.load(sys.stdin)["LifecycleActionToken"]')
