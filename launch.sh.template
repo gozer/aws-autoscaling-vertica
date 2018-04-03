@@ -82,7 +82,7 @@ echo "$resId|$instId|$privateIp|$subnetCIDR|$publicIp|INITIALIZING|1" | vsql -U 
 
 echo "Check if there are any DOWN nodes in our subnet."
 # If there is a DOWN node, we will automatically take its place by adopting its private IP address (if another launching instance hasn't got it first!).
-vsql -U dbadmin -h $connectTo -c "UPDATE autoscale.launches SET replace_node_address = (SELECT node_address FROM nodes WHERE node_state='DOWN' EXCEPT SELECT node_address FROM autoscale.launches WHERE is_running AND node_subnet_cidr='$subnetCIDR' LIMIT 1) WHERE ec2_instanceid='$instId'; COMMIT;"
+vsql -U dbadmin -h $connectTo -c "UPDATE autoscale.launches SET replace_node_address = (SELECT node_address FROM nodes WHERE node_state='DOWN' EXCEPT ( SELECT replace_node_address FROM autoscale.launches WHERE is_running AND node_subnet_cidr='$subnetCIDR')  LIMIT 1) WHERE ec2_instanceid='$instId'; COMMIT;"
 
 downNode=$(vsql -qAt -U dbadmin -h $connectTo -c "SELECT replace_node_address FROM autoscale.launches WHERE ec2_instanceid='$instId'")
 if [ ! -z "$downNode" ]; then
