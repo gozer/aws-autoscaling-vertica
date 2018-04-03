@@ -56,7 +56,7 @@ echo "Check that we have enough 'replace_nodes' for all the 'down_nodes'."
 replace_nodes_count=$(echo $replace_nodes | awk -F, '{print NF}')
 down_nodes_count=$(echo $down_nodes | awk -F, '{print NF}')
 if [ $down_nodes_count -gt $replace_nodes_count ]; then
-   status="Insufficient replacement nodes [$replace_nodes_count] to replace down nodes [down_nodes_count]. Wait for new launch(es)."
+   status="Insufficient replacement nodes [$replace_nodes_count] to replace down nodes [$down_nodes_count]. Wait for new launch(es)."
    echo $status
    vsql -c "UPDATE autoscale.launches SET status='$status' WHERE is_running; COMMIT" > /dev/null
    exit 1;
